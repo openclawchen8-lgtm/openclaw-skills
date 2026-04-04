@@ -1,14 +1,4 @@
----
-name: "Prompt Injection Filter | Prompt 注入過濾器"
-description: "Simple regex-based prompt injection detector. Detects ignore previous, role play, delimiter injection, encoding obfuscation, and jailbreak attempts. Pure Python, no dependencies. (prompt-injection-filter)"
----
-
 # Prompt Injection Filter
-
-> 簡單但有效的 Prompt Injection 過濾器，幫助攔截常見的提示注入攻擊。
-> Simple but effective Prompt Injection filter for AI agents.
-
-**版本**: 1.0.0 | **作者**: 宝宝 (寶寶)
 
 > 简单但有效的 Prompt Injection 过滤器，帮助拦截常见的提示注入攻击。
 

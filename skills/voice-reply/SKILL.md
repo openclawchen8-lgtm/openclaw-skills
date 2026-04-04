@@ -1,6 +1,5 @@
 ---
-
-name: "Voice Reply (Bimodal) | 語音雙模回覆技能"
+name: voice-reply
 version: 1.0.0
 description: 語音雙模回覆技能。使用 Edge TTS (免費) 生成語音回覆，使用 Whisper 轉錄語音輸入。
 metadata: 
@@ -22,9 +21,7 @@ metadata:
       kind: brew
       formula: ffmpeg
       label: "brew install ffmpeg"
-
 ---
-
 
 # Voice Reply Skill
 

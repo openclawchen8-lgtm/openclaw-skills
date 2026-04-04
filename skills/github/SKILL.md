@@ -1,10 +1,7 @@
 ---
-
-name: "GitHub CLI Skill | GitHub 命令列工具"
-description: "Interact with GitHub via gh CLI. Manage issues, PRs, workflow runs, and API queries. Always use --repo flag or clone into a git directory. (github)"
-
+name: github
+description: "Interact with GitHub using the `gh` CLI. Use `gh issue`, `gh pr`, `gh run`, and `gh api` for issues, PRs, CI runs, and advanced queries."
 ---
-
 
 # GitHub Skill
 

@@ -1,10 +1,7 @@
 ---
-
-name: "OpenClaw Backup & Restore | OpenClaw 備份與還原"
+name: openclaw-backup
 description: Backup and restore OpenClaw data. Use when user asks to create backups, set up automatic backup schedules, restore from backup, or manage backup rotation. Handles ~/.openclaw directory archiving with proper exclusions.
-
 ---
-
 
 # OpenClaw Backup
 

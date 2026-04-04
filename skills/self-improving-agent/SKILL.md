@@ -1,11 +1,8 @@
 ---
-
-name: "Self-Improvement Agent (Alt) | 自我提升代理（另版）"
-description: "Captures learnings, errors, and corrections to .learnings/ markdown files. Supports multi-agent workflows, automatic promotion to CLAUDE.md/AGENTS.md, and hook integration. (self-improving-agent)"
+name: self-improvement
+description: "Captures learnings, errors, and corrections to enable continuous improvement. Use when: (1) A command or operation fails unexpectedly, (2) User corrects Claude ('No, that's wrong...', 'Actually...'), (3) User requests a capability that doesn't exist, (4) An external API or tool fails, (5) Claude realizes its knowledge is outdated or incorrect, (6) A better approach is discovered for a recurring task. Also review learnings before major tasks."
 metadata:
-
 ---
-
 
 # Self-Improvement Skill
 

@@ -1,6 +1,5 @@
 ---
-
-name: "Gold Price Monitor | 台灣銀行黃金存摺價格監控系統"
+name: gold-monitor
 version: 1.0.0
 description: 台灣銀行黃金存摺價格監控系統。支援價格變動通知、特定價格點位監控與每日收盤報告。
 metadata:
@@ -28,9 +27,7 @@ metadata:
       packages:
         - playwright
       label: "npm install playwright (in workspace/scripts)"
-
 ---
-
 
 # Gold Monitor Skill
 
@@ -63,8 +60,8 @@ metadata:
 ```json
 {
   "threshold": 50,
-  "telegram_bot_token": "<YOUR_TELEGRAM_BOT_TOKEN>",
-  "telegram_chat_id": "<YOUR_CHAT_ID>",
+  "telegram_bot_token": "YOUR_BOT_TOKEN",
+  "telegram_chat_id": "YOUR_CHAT_ID",
   "price_targets": [
     {"price": 4500, "type": "buy", "label": "進場點"},
     {"price": 5000, "type": "sell", "label": "出場點"}
