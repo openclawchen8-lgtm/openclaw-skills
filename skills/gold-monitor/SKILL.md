@@ -63,8 +63,8 @@ metadata:
 ```json
 {
   "threshold": 50,
-  "telegram_bot_token": "YOUR_BOT_TOKEN",
-  "telegram_chat_id": "YOUR_CHAT_ID",
+  "telegram_bot_token": "<YOUR_TELEGRAM_BOT_TOKEN>",
+  "telegram_chat_id": "<YOUR_CHAT_ID>",
   "price_targets": [
     {"price": 4500, "type": "buy", "label": "進場點"},
     {"price": 5000, "type": "sell", "label": "出場點"}
