@@ -32,8 +32,56 @@ def run_classify(ideas: list) -> list:
     return [classify_idea(idea) for idea in ideas]
 
 
-def build_summary(results: list, ideas_dir: str) -> str:
-    """產生人類可讀的摘要文字。"""
+def build_telegram_summary(results: list, ideas_dir: str) -> str:
+    """產生 Telegram 友善格式的摘要（簡潔版）。"""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    total = len(results)
+
+    if total == 0:
+        lines = [
+            f"📋 Ideas 掃描 — {now}",
+            "✅ 無待處理 idea",
+        ]
+    else:
+        total_actionable = sum(r["total_actionable_tasks"] for r in results)
+        total_done = sum(r["done_count"] for r in results)
+        
+        lines = [
+            f"📋 Ideas 掃描 — {now}",
+            f"📊 待處理: {total_actionable} | 已完成: {total_done}",
+            "",
+        ]
+
+        for r in results:
+            pid = r["project_name"]
+            pending = r["pending_count"]
+            actionable = r["total_actionable_tasks"]
+            
+            if actionable == 0:
+                continue  # 跳過無待處理的專案
+            
+            # 按負責人分組
+            by_assignee = {}
+            for t in r["tasks"]:
+                a = t["assignee"]
+                if a not in by_assignee:
+                    by_assignee[a] = []
+                by_assignee[a].append(t)
+            
+            lines.append(f"📁 {pid}/")
+            for assignee, tasks in by_assignee.items():
+                for i, t in enumerate(tasks):
+                    prefix = "└─" if i == len(tasks) - 1 else "├─"
+                    lines.append(f"  {prefix} {t['title'][:30]} → {assignee}")
+            lines.append("")
+        
+        lines.append("💬 回覆「確認」執行")
+
+    return "\n".join(lines)
+
+
+def build_full_summary(results: list, ideas_dir: str) -> str:
+    """產生完整摘要（終端輸出用）。"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     total = len(results)
 
@@ -82,6 +130,7 @@ def main():
     parser.add_argument("--ideas-dir", default="/Users/claw/Ideas")
     parser.add_argument("--dry-run", action="store_true", help="只輸出，不發送通知")
     parser.add_argument("--json", action="store_true", help="輸出 JSON 而非文字摘要")
+    parser.add_argument("--telegram", action="store_true", help="輸出 Telegram 簡潔格式")
     args = parser.parse_args()
 
     ideas = run_scan(args.ideas_dir)
@@ -95,10 +144,12 @@ def main():
         }, ensure_ascii=False, indent=2))
         return
 
-    summary = build_summary(results, args.ideas_dir)
-    print(summary)
+    # 終端輸出用完整格式
+    if not args.telegram:
+        summary = build_full_summary(results, args.ideas_dir)
+        print(summary)
 
-    # JSON 結構一併寫入狀態檔，供 OpenClaw cron delivery 使用
+    # JSON 結構一併寫入狀態檔，供 executor.py 使用
     status_file = Path(__file__).parent / "lifecycle_status.json"
     status_file.write_text(json.dumps({
         "timestamp": datetime.now().isoformat(),
@@ -109,6 +160,11 @@ def main():
         "has_pending": any(r["pending_count"] > 0 for r in results),
         "results": results,
     }, ensure_ascii=False), encoding="utf-8")
+
+    # Telegram 格式輸出（供 cron 通知用）
+    if args.telegram:
+        telegram_summary = build_telegram_summary(results, args.ideas_dir)
+        print(telegram_summary)
 
     if args.dry_run:
         print("\n[DRY RUN] 未發送通知")
