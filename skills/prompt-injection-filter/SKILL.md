@@ -1,6 +1,8 @@
 # Prompt Injection Filter
 
 > 简单但有效的 Prompt Injection 过滤器，帮助拦截常见的提示注入攻击。
+>
+> A simple yet effective Prompt Injection filter to intercept common prompt injection attacks.
 
 **版本**: 1.0.0 | **作者**: 宝宝 (寶寶)
 
@@ -37,6 +39,8 @@ result = filter_input(user_input)
 
 ## 内置检测规则
 
+规则存放在 `patterns.json` 檔案中，可自行編輯或更新。
+
 | 规则ID | 模式 | 风险 |
 |--------|------|------|
 | `detect_ignore_previous` | ignore previous, disregard system | 高 |
@@ -44,6 +48,15 @@ result = filter_input(user_input)
 | `detect_delimiter` | ```, <xml>, [INST] | 中 |
 | `detect_encoding` | base64, url encode, hex | 低 |
 | `detect_jailbreak` | DAN mode, developer mode, jailbreak | 高 |
+
+### 更新规则
+
+直接编辑 `patterns.json` 文件，然后调用：
+
+```python
+from prompt_injection_filter import reload_filter
+reload_filter()  # 重新载入规则
+```
 
 ## 示例
 

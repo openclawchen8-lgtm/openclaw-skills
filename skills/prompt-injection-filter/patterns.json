@@ -1,0 +1,78 @@
+[
+  {
+    "id": "detect_ignore_previous",
+    "name": "Ignore Previous Instructions",
+    "name_zh": "忽略先前指令",
+    "patterns": [
+      "ignore\\s+(all\\s+)?previous\\s+(instruction|command|directive)",
+      "disregard\\s+(all\\s+)?(your\\s+)?(instruction|system\\s+prompt)",
+      "forget\\s+(your\\s+)?(instruction|system\\s+prompt)",
+      "new\\s+instruction:",
+      "override\\s+(your\\s+)?(instruction|system)",
+      "\\\\ignore\\\\s+previous"
+    ],
+    "risk": "high",
+    "description": "Attempts to make the model ignore previous context or instructions",
+    "description_zh": "試圖讓模型忽略先前的上下文或指令"
+  },
+  {
+    "id": "detect_role_play",
+    "name": "Role Play Attempt",
+    "name_zh": "角色扮演嘗試",
+    "patterns": [
+      "you\\s+are\\s+now\\s+(a|an)",
+      "act\\s+as\\s+(a|an)",
+      "pretend\\s+(to\\s+be|you\\s+are)",
+      "roleplay",
+      "assume\\s+the\\s+role\\s+of"
+    ],
+    "risk": "medium",
+    "description": "Attempts to change the model's role or persona",
+    "description_zh": "試圖改變模型的角色或身份"
+  },
+  {
+    "id": "detect_delimiter",
+    "name": "Prompt Delimiter Injection",
+    "name_zh": "提示分隔符注入",
+    "patterns": [
+      "^```[\\s\\S]*```$",
+      "^\\[INST\\]",
+      "^<\\w+>.*</\\w+>$",
+      "<<SYS>>",
+      "<<\\/SYS>>",
+      "###\\s*Instruction"
+    ],
+    "risk": "medium",
+    "description": "Attempts to inject prompt delimiters to confuse the model",
+    "description_zh": "試圖注入提示分隔符來混淆模型"
+  },
+  {
+    "id": "detect_encoding",
+    "name": "Encoding Obfuscation",
+    "name_zh": "編碼混淆",
+    "patterns": [
+      "base64:",
+      "url\\s*encode",
+      "hex\\s*encode",
+      "\\\\x[0-9a-fA-F]{2}"
+    ],
+    "risk": "low",
+    "description": "Attempts to obfuscate malicious input using encoding",
+    "description_zh": "試圖使用編碼來混淆惡意輸入"
+  },
+  {
+    "id": "detect_jailbreak",
+    "name": "Jailbreak Keywords",
+    "name_zh": "越獄關鍵字",
+    "patterns": [
+      "DAN\\s+mode",
+      "developer\\s+mode",
+      "jailbreak",
+      "bypass\\s+(safety|restriction|filter)",
+      "system\\s+override"
+    ],
+    "risk": "high",
+    "description": "Common jailbreak keywords and phrases",
+    "description_zh": "常見的越獄關鍵字和短語"
+  }
+]
