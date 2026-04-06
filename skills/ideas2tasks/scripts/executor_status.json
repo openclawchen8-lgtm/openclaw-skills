@@ -1,45 +1,80 @@
 {
-  "timestamp": "2026-04-06T11:08:05.072208",
-  "created_count": 6,
+  "timestamp": "2026-04-06T17:54:07.920206",
+  "created_count": 11,
   "created": [
     {
-      "project": "openclaw",
+      "project": "github-data-review",
       "task_num": 1,
+      "title": "請檢視https://github.com/openclawchen8-lgtm/openclaw-tasks這裡備份的資料結構。並修正相關備份腳本。並更新相關",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "github-data-review",
+      "task_num": 2,
+      "title": "請確認所有排成備份皆有正常備份。並請提供每個備份的review結果(用網頁截圖及本地驗證截圖)及連結。並將每個排程備份檢查結果及相關截圖製作成markdown文",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "gold-monitor-issue",
+      "task_num": 1,
+      "title": "請檢查及修正 黃金存摺價格監控 的問題。發現歷史資料有誤，故顯形無法正常顯示。",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "gold-monitor-issue",
+      "task_num": 2,
+      "title": "請排定後續觀察及回報驗證狀況，持續三天，每天個檢查及比對線上價位是否與監控相同並回報比對結果。",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "gold-monitor-issue",
+      "task_num": 3,
+      "title": "請依照修正後結果，更新TASK及HOWTO。並回報完成進度及狀況。",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "openclaw",
+      "task_num": 7,
       "title": "How to install and start OpenClaw while qclaw is running. And then both must be ",
       "assignee": "碼農 1 號",
       "agent_id": "agent-f937014d"
     },
     {
       "project": "openclaw",
-      "task_num": 2,
+      "task_num": 8,
       "title": "How to install openclaw with npm under macbook when qclaw running.",
       "assignee": "安安",
       "agent_id": "agent-ann"
     },
     {
       "project": "openclaw",
-      "task_num": 3,
+      "task_num": 9,
       "title": "How to install pre-defined openclaw skills without startup openclaw.",
       "assignee": "碼農 1 號",
       "agent_id": "agent-f937014d"
     },
     {
       "project": "openclaw",
-      "task_num": 4,
+      "task_num": 10,
       "title": "How to install pre-defined openclaw plugins without startup openclaw.",
       "assignee": "安安",
       "agent_id": "agent-ann"
     },
     {
       "project": "openclaw",
-      "task_num": 5,
+      "task_num": 11,
       "title": "How to create pre-defined members with agents's defined md files without startup",
       "assignee": "碼農 1 號",
       "agent_id": "agent-f937014d"
     },
     {
       "project": "openclaw",
-      "task_num": 6,
+      "task_num": 12,
       "title": "How to backup and restore for openclaw's cron tasks.",
       "assignee": "安安",
       "agent_id": "agent-ann"
