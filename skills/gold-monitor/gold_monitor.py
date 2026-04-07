@@ -64,15 +64,19 @@ def record_price(price, time_str, is_daily_close=False):
     """記錄價格到歷史"""
     history = load_history()
     today = datetime.now().strftime("%Y-%m-%d")
+    now = datetime.now()
+    # 使用實際抓取時間作為記錄時間，而非網站上的靜態掛牌時間
+    record_time = now.strftime("%Y/%m/%d %H:%M")
     
     # 記錄日內價格
     if today not in history["intraday"]:
         history["intraday"][today] = []
     
     history["intraday"][today].append({
-        "time": time_str,
+        "time": record_time,
         "price": price,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": now.isoformat(),
+        "source_time": time_str  # 保留原始掛牌時間供參考
     })
     
     # 如果是收盤，記錄到每日歷史
