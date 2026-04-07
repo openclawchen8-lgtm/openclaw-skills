@@ -3,6 +3,12 @@
 ideas2tasks classify.py
 根據 idea 內容分類、拆分 tasks、分配團隊成員。
 輸出可送入 task 模板的結構化資料。
+
+支援格式：
+  1. task.N / task.N done 格式（原有）
+  2. 任務 X.X：格式（專案計畫書常見）
+  3. Task X.X: 格式（英文計畫書）
+  4. - [ ] 待辦清單格式
 """
 
 import json
@@ -27,6 +33,7 @@ CATEGORY_KEYWORDS = {
     "docs":       ["doc", "howto", "readme", "文檔", "說明"],
     "dev":        ["code", "python", "script", "api", "腳本"],
     "test":       ["test", "測試", "驗證", "qa"],
+    "analysis":   ["分析", "決策", "agent", "投資", "策略"],
 }
 
 # ── Task 類型 → 負責人映射 ────────────────────────────────────
@@ -39,6 +46,7 @@ TYPE_ASSIGNEE = {
     "docs":       [ROLE_DOC],
     "dev":        [ROLE_CODER[0], ROLE_CODER[1]],
     "test":       [ROLE_REVIEWER],
+    "analysis":   [ROLE_CODER[0], ROLE_DOC],
 }
 
 
@@ -55,11 +63,9 @@ def detect_category(text: str) -> str:
     return max(scores, key=scores.get)
 
 
-def parse_done_markers(content: str) -> tuple[list[dict], list[dict]]:
+def parse_task_dot_n_format(content: str) -> tuple[list[dict], list[dict]]:
     """
-    分析 idea 內容，回傳:
-    - done_tasks: 已完成的 task 列表（含標題、行號）
-    - pending_tasks: 待執行的 task 列表（含標題、行號、內容）
+    解析 task.N 格式（原有邏輯）。
     
     規則：
     - 行首 "task.N done" / "task.N_done" → 該 task 已完成
@@ -77,7 +83,6 @@ def parse_done_markers(content: str) -> tuple[list[dict], list[dict]]:
     for i, line in enumerate(lines):
         m = task_pattern.match(line.strip())
         if m:
-            # 先把上一個 task 的內容收起來
             if current_task:
                 body = "\n".join(current_body_lines).strip()
                 entry = {"title": current_task["raw_title"], "body": body, "line": current_task["line"]}
@@ -98,12 +103,10 @@ def parse_done_markers(content: str) -> tuple[list[dict], list[dict]]:
             if rest:
                 current_body_lines.append(rest)
         elif current_task is not None:
-            # 自由行內容，附加到當前 task
             stripped = line.strip()
             if stripped:
                 current_body_lines.append(line)
 
-    # 最後一個 task
     if current_task:
         body = "\n".join(current_body_lines).strip()
         entry = {"title": current_task["raw_title"], "body": body, "line": current_task["line"]}
@@ -115,9 +118,243 @@ def parse_done_markers(content: str) -> tuple[list[dict], list[dict]]:
     return done_tasks, pending_tasks
 
 
+def parse_chinese_task_format(content: str) -> tuple[list[dict], list[dict]]:
+    """
+    解析「任務 X.X：」格式（中文專案計畫書常見）。
+    
+    支援格式：
+    - 任務 1.1：搭建開發環境
+    - 任務1.1: 搭建開發環境
+    - 任务 1.1：搭建开发环境（简体）
+    """
+    done_tasks = []
+    pending_tasks = []
+    
+    # 匹配「任務 X.X：」或「任務 X.X:」格式
+    task_pattern = re.compile(
+        r'^任\s*[务務]\s*(\d+(?:\.\d+)?)\s*[：:]\s*(.+)$',
+        re.IGNORECASE
+    )
+    
+    lines = content.splitlines()
+    current_task = None
+    current_body_lines = []
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        m = task_pattern.match(stripped)
+        
+        if m:
+            # 先保存上一個 task
+            if current_task:
+                body = "\n".join(current_body_lines).strip()
+                entry = {
+                    "title": current_task["title"],
+                    "body": body,
+                    "line": current_task["line"],
+                    "num": current_task["num"],
+                }
+                if current_task["done"]:
+                    done_tasks.append(entry)
+                else:
+                    pending_tasks.append(entry)
+            
+            # 開始新 task
+            task_num = m.group(1)
+            task_title = m.group(2).strip()
+            
+            # 檢查是否標記為 done
+            is_done = bool(re.search(r'\bdone\b|\b完成\b|\b已完成\b', task_title, re.IGNORECASE))
+            
+            current_task = {
+                "num": task_num,
+                "title": f"任務 {task_num}：{task_title}",
+                "line": i + 1,
+                "done": is_done,
+            }
+            current_body_lines = []
+        elif current_task is not None:
+            # 收集 task 的描述內容（直到下一個 task 或空行區隔）
+            if stripped and not stripped.startswith('任'):
+                # 只收集有意義的內容，跳過過長的描述
+                if len(current_body_lines) < 3:  # 限制每個 task 的描述行數
+                    current_body_lines.append(stripped)
+    
+    # 最後一個 task
+    if current_task:
+        body = "\n".join(current_body_lines).strip()
+        entry = {
+            "title": current_task["title"],
+            "body": body,
+            "line": current_task["line"],
+            "num": current_task["num"],
+        }
+        if current_task["done"]:
+            done_tasks.append(entry)
+        else:
+            pending_tasks.append(entry)
+    
+    return done_tasks, pending_tasks
+
+
+def parse_english_task_format(content: str) -> tuple[list[dict], list[dict]]:
+    """
+    解析「Task X.X:」格式（英文專案計畫書）。
+    
+    支援格式：
+    - Task 1.1: Setup development environment
+    - Task 1.1：Setup development environment
+    """
+    done_tasks = []
+    pending_tasks = []
+    
+    task_pattern = re.compile(
+        r'^Task\s*(\d+(?:\.\d+)?)\s*[：:]\s*(.+)$',
+        re.IGNORECASE
+    )
+    
+    lines = content.splitlines()
+    current_task = None
+    current_body_lines = []
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        m = task_pattern.match(stripped)
+        
+        if m:
+            if current_task:
+                body = "\n".join(current_body_lines).strip()
+                entry = {
+                    "title": current_task["title"],
+                    "body": body,
+                    "line": current_task["line"],
+                    "num": current_task["num"],
+                }
+                if current_task["done"]:
+                    done_tasks.append(entry)
+                else:
+                    pending_tasks.append(entry)
+            
+            task_num = m.group(1)
+            task_title = m.group(2).strip()
+            is_done = bool(re.search(r'\bdone\b|\bcompleted?\b', task_title, re.IGNORECASE))
+            
+            current_task = {
+                "num": task_num,
+                "title": f"Task {task_num}: {task_title}",
+                "line": i + 1,
+                "done": is_done,
+            }
+            current_body_lines = []
+        elif current_task is not None:
+            if stripped and not re.match(r'^Task\s*\d', stripped, re.IGNORECASE):
+                if len(current_body_lines) < 3:
+                    current_body_lines.append(stripped)
+    
+    if current_task:
+        body = "\n".join(current_body_lines).strip()
+        entry = {
+            "title": current_task["title"],
+            "body": body,
+            "line": current_task["line"],
+            "num": current_task["num"],
+        }
+        if current_task["done"]:
+            done_tasks.append(entry)
+        else:
+            pending_tasks.append(entry)
+    
+    return done_tasks, pending_tasks
+
+
+def parse_checkbox_format(content: str) -> tuple[list[dict], list[dict]]:
+    """
+    解析 Markdown 待辦清單格式。
+    
+    支援格式：
+    - [ ] 待辦事項
+    - [x] 已完成事項
+    """
+    done_tasks = []
+    pending_tasks = []
+    
+    lines = content.splitlines()
+    task_counter = 0
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        
+        # 匹配 [x] 已完成
+        m_done = re.match(r'^-\s*\[[xX]\]\s*(.+)$', stripped)
+        if m_done:
+            task_counter += 1
+            done_tasks.append({
+                "title": m_done.group(1).strip(),
+                "body": "",
+                "line": i + 1,
+                "num": str(task_counter),
+            })
+            continue
+        
+        # 匹配 [ ] 待辦
+        m_pending = re.match(r'^-\s*\[\s*\]\s*(.+)$', stripped)
+        if m_pending:
+            task_counter += 1
+            pending_tasks.append({
+                "title": m_pending.group(1).strip(),
+                "body": "",
+                "line": i + 1,
+                "num": str(task_counter),
+            })
+    
+    return done_tasks, pending_tasks
+
+
+def parse_all_formats(content: str) -> tuple[list[dict], list[dict]]:
+    """
+    嘗試所有格式解析器，返回結果最多的一個。
+    優先級：task.N > 任務 X.X > Task X.X > checkbox
+    """
+    # 嘗試各種格式
+    results = [
+        ("task.N", parse_task_dot_n_format(content)),
+        ("任務 X.X", parse_chinese_task_format(content)),
+        ("Task X.X", parse_english_task_format(content)),
+        ("checkbox", parse_checkbox_format(content)),
+    ]
+    
+    # 選擇識別出最多 tasks 的格式
+    best_format = None
+    best_count = 0
+    best_result = ([], [])
+    
+    for fmt, (done, pending) in results:
+        total = len(done) + len(pending)
+        if total > best_count:
+            best_count = total
+            best_result = (done, pending)
+            best_format = fmt
+    
+    # 如果沒有識別到任何 task，返回空結果
+    if best_count == 0:
+        return [], []
+    
+    return best_result
+
+
+def parse_done_markers(content: str) -> tuple[list[dict], list[dict]]:
+    """
+    分析 idea 內容，回傳:
+    - done_tasks: 已完成的 task 列表（含標題、行號）
+    - pending_tasks: 待執行的 task 列表（含標題、行號、內容）
+    
+    自動偵測並使用最佳格式解析器。
+    """
+    return parse_all_formats(content)
+
+
 def build_tasks(pending: list[dict], category: str, max_tasks: int = 10) -> list[dict]:
     """將 pending task 區塊轉為標準 task 結構。"""
-    # 推斷分配池
     pool = TYPE_ASSIGNEE.get(category, ROLE_CODER)
     results = []
 
@@ -128,11 +365,11 @@ def build_tasks(pending: list[dict], category: str, max_tasks: int = 10) -> list
 
         # 推斷優先級
         priority = "medium"
-        for kw in ["新增", "建立", "修復", "bug", "優先"]:
+        for kw in ["新增", "建立", "修復", "bug", "優先", "urgent", "critical"]:
             if kw in title:
                 priority = "high"
                 break
-        for kw in ["文件", "comment", "整理", "美化", "整理"]:
+        for kw in ["文件", "comment", "整理", "美化", "文檔", "docs"]:
             if kw in title:
                 priority = "low"
 
