@@ -1,80 +1,129 @@
 {
-  "timestamp": "2026-04-07T08:16:13.939897",
-  "created_count": 11,
+  "timestamp": "2026-04-08T09:10:37.350259",
+  "created_count": 18,
   "created": [
     {
-      "project": "github-data-review",
+      "project": "openclaw-scrum",
+      "task_num": 1,
+      "title": "研究openclaw敏捷任務自動化相關資料及實作方式",
+      "assignee": "碼農 1 號",
+      "agent_id": "agent-f937014d"
+    },
+    {
+      "project": "openclaw-scrum",
+      "task_num": 2,
+      "title": "研究適合本地落實的實作方案，並進行評估及確認後規劃實作後續及追蹤其成效",
+      "assignee": "安安",
+      "agent_id": "agent-ann"
+    },
+    {
+      "project": "openclaw-scrum",
       "task_num": 3,
+      "title": "本地目前團隊是否需要增加一位資料研究員，研究 增加一位資料研究員 的相關配置檔，並給出一個推薦及完整的配置檔。",
+      "assignee": "碼農 1 號",
+      "agent_id": "agent-f937014d"
+    },
+    {
+      "project": "openclaw-scrum",
+      "task_num": 4,
+      "title": "review目前所有團員的的相關配置檔，並提供改善建議之配置檔。",
+      "assignee": "安安",
+      "agent_id": "agent-ann"
+    },
+    {
+      "project": "openclaw-scrum",
+      "task_num": 5,
+      "title": "研究是否有適合本地的 IDEAS 及 任務 及 產出的HOWTO 及 專案 的面板可以方便追蹤使用？",
+      "assignee": "碼農 1 號",
+      "agent_id": "agent-f937014d"
+    },
+    {
+      "project": "openclaw-scrum",
+      "task_num": 6,
+      "title": "專案任務的分派後執行的狀態在qcalw app上，是看不到處理過程的？是否有辦法可以看到？",
+      "assignee": "安安",
+      "agent_id": "agent-ann"
+    },
+    {
+      "project": "openclaw-scrum",
+      "task_num": 7,
+      "title": "研究目前推薦且安全的openclaw skills及plugins，以免費使用為主。且要附上簡易描述，可以強化哪部分。",
+      "assignee": "碼農 1 號",
+      "agent_id": "agent-f937014d"
+    },
+    {
+      "project": "github-data-review",
+      "task_num": 5,
       "title": "請檢視https://github.com/openclawchen8-lgtm/openclaw-tasks這裡備份的資料結構。並修正相關備份腳本。並更新相關",
       "assignee": "碼農 2 號",
       "agent_id": "agent-coder2"
     },
     {
       "project": "github-data-review",
-      "task_num": 4,
+      "task_num": 6,
       "title": "請確認所有排成備份皆有正常備份。並請提供每個備份的review結果(用網頁截圖及本地驗證截圖)及連結。並將每個排程備份檢查結果及相關截圖製作成markdown文",
       "assignee": "碼農 2 號",
       "agent_id": "agent-coder2"
     },
     {
       "project": "gold-monitor-issue",
-      "task_num": 4,
+      "task_num": 7,
       "title": "請檢查及修正 黃金存摺價格監控 的問題。發現歷史資料有誤，故顯形無法正常顯示。",
       "assignee": "碼農 2 號",
       "agent_id": "agent-coder2"
     },
     {
       "project": "gold-monitor-issue",
-      "task_num": 5,
+      "task_num": 8,
       "title": "請排定後續觀察及回報驗證狀況，持續三天，每天個檢查及比對線上價位是否與監控相同並回報比對結果。",
       "assignee": "碼農 2 號",
       "agent_id": "agent-coder2"
     },
     {
       "project": "gold-monitor-issue",
-      "task_num": 6,
+      "task_num": 9,
       "title": "請依照修正後結果，更新TASK及HOWTO。並回報完成進度及狀況。",
       "assignee": "碼農 2 號",
       "agent_id": "agent-coder2"
     },
     {
       "project": "openclaw",
-      "task_num": 13,
+      "task_num": 19,
       "title": "How to install and start OpenClaw while qclaw is running. And then both must be ",
       "assignee": "碼農 1 號",
       "agent_id": "agent-f937014d"
     },
     {
       "project": "openclaw",
-      "task_num": 14,
+      "task_num": 20,
       "title": "How to install openclaw with npm under macbook when qclaw running.",
       "assignee": "安安",
       "agent_id": "agent-ann"
     },
     {
       "project": "openclaw",
-      "task_num": 15,
+      "task_num": 21,
       "title": "How to install pre-defined openclaw skills without startup openclaw.",
       "assignee": "碼農 1 號",
       "agent_id": "agent-f937014d"
     },
     {
       "project": "openclaw",
-      "task_num": 16,
+      "task_num": 22,
       "title": "How to install pre-defined openclaw plugins without startup openclaw.",
       "assignee": "安安",
       "agent_id": "agent-ann"
     },
     {
       "project": "openclaw",
-      "task_num": 17,
+      "task_num": 23,
       "title": "How to create pre-defined members with agents's defined md files without startup",
       "assignee": "碼農 1 號",
       "agent_id": "agent-f937014d"
     },
     {
       "project": "openclaw",
-      "task_num": 18,
+      "task_num": 24,
       "title": "How to backup and restore for openclaw's cron tasks.",
       "assignee": "安安",
       "agent_id": "agent-ann"
