@@ -30,9 +30,13 @@ STATUS_NORMALIZE = {
 }
 
 # 用於從 task 檔案中提取 Status 行的正則
+# 支援格式：
+#   - Status: pending（Markdown 列表項）
+#   - **Status**: done（加粗）
+#   - status: done（YAML front matter，小寫）
 STATUS_PATTERN = re.compile(
-    r'^[-*\s]*\**Status\**\s*[:：]\s*(.+)$',
-    re.MULTILINE | re.IGNORECASE
+    r'^[-*\s]*\**[Ss]tatus\**\s*[:：]\s*(.+?)(?:\s*#.*)?$',
+    re.MULTILINE
 )
 
 

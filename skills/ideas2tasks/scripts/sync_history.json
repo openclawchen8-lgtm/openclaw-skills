@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-04-12T09:05:54.424371",
-  "total_synced": 9,
+  "timestamp": "2026-04-12T09:17:44.531103",
+  "total_synced": 0,
   "results": [
     {
       "project": "working-issue",
@@ -19,13 +19,7 @@
     {
       "project": "openclaw",
       "idea_file": "/Users/claw/Ideas/openclaw.txt",
-      "synced": [
-        5,
-        1,
-        4,
-        3,
-        2
-      ],
+      "synced": [],
       "errors": []
     },
     {
@@ -47,9 +41,7 @@
     {
       "project": "claw-sessions-issue",
       "idea_file": "/Users/claw/Ideas/claw-sessions-issue.txt",
-      "synced": [
-        1
-      ],
+      "synced": [],
       "errors": []
     },
     {
@@ -119,10 +111,7 @@
     {
       "project": "github-data-review",
       "idea_file": "/Users/claw/Ideas/github-data-review.txt",
-      "synced": [
-        1,
-        2
-      ],
+      "synced": [],
       "errors": []
     },
     {
@@ -200,9 +189,7 @@
     {
       "project": "gold-monitor-issue",
       "idea_file": "/Users/claw/Ideas/gold-monitor-issue.txt",
-      "synced": [
-        1
-      ],
+      "synced": [],
       "errors": []
     },
     {

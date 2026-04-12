@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from read_task_status import read_task_status, read_all_task_status
+from task_status import read_task_status, scan_project_tasks
 
 
 TASKS_DIR = Path("/Users/claw/Tasks")
@@ -126,13 +126,10 @@ def sync_project(project_dir: Path, dry_run: bool = False) -> dict:
     result["idea_file"] = str(idea_file)
     
     # 2. 讀取 Tasks 狀態
-    task_statuses = read_all_task_status(project_dir)
+    tasks_status = scan_project_tasks(project_dir)
     
     # 3. 對每個 done 的 task，確保 idea 檔已標記
-    for task_id, status in task_statuses.items():
-        if status != "done":
-            continue
-        
+    for task_id in tasks_status.get("done", []):
         task_num = int(task_id[1:])  # T001 → 1
         
         if dry_run:
