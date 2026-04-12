@@ -1,3 +1,49 @@
 {
-  "processed": {}
+  "processed": {
+    "gold-monitor-issue.txt": {
+      "timestamp": "2026-04-12T09:55:43.755999",
+      "project": "gold-monitor-issue",
+      "task_count": 3
+    },
+    "github-data-review.txt": {
+      "timestamp": "2026-04-12T09:55:43.756004",
+      "project": "github-data-review",
+      "task_count": 0
+    },
+    "claw-sessions-issue.txt": {
+      "timestamp": "2026-04-12T09:55:43.756007",
+      "project": "claw-sessions-issue",
+      "task_count": 0
+    },
+    "openclaw.txt": {
+      "timestamp": "2026-04-12T09:55:43.756010",
+      "project": "openclaw",
+      "task_count": 1
+    },
+    "gold-analysis-improve.txt": {
+      "timestamp": "2026-04-12T09:55:43.756012",
+      "project": "gold-analysis-improve",
+      "task_count": 2
+    },
+    "member-backup.txt": {
+      "timestamp": "2026-04-12T09:55:43.756015",
+      "project": "member-backup",
+      "task_count": 1
+    },
+    "working-issue.txt": {
+      "timestamp": "2026-04-12T09:55:43.756017",
+      "project": "working-issue",
+      "task_count": 2
+    },
+    "llm-router.txt": {
+      "timestamp": "2026-04-12T09:55:43.756020",
+      "project": "llm-router",
+      "task_count": 1
+    },
+    "openclaw-scrum.txt": {
+      "timestamp": "2026-04-12T09:55:43.756022",
+      "project": "openclaw-scrum",
+      "task_count": 5
+    }
+  }
 }

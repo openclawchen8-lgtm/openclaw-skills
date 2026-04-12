@@ -22,6 +22,7 @@ ROLE_CODER    = ["碼農 1 號", "碼農 2 號"]
 ROLE_DOC      = "安安"
 ROLE_REVIEWER = "樂樂"
 ROLE_PLANNER  = "豪（用戶）"
+ROLE_RESEARCH = "研研"
 
 # ── 關鍵字分類矩陣 ────────────────────────────────────────────
 CATEGORY_KEYWORDS = {
@@ -34,6 +35,7 @@ CATEGORY_KEYWORDS = {
     "dev":        ["code", "python", "script", "api", "腳本"],
     "test":       ["test", "測試", "驗證", "qa"],
     "analysis":   ["分析", "決策", "agent", "投資", "策略"],
+    "research":   ["研究", "調研", "評估", "比較", "review", "recommend"],
 }
 
 # ── Task 類型 → 負責人映射 ────────────────────────────────────
@@ -46,7 +48,8 @@ TYPE_ASSIGNEE = {
     "docs":       [ROLE_DOC],
     "dev":        [ROLE_CODER[0], ROLE_CODER[1]],
     "test":       [ROLE_REVIEWER],
-    "analysis":   [ROLE_CODER[0], ROLE_DOC],
+    "analysis":   [ROLE_CODER[0], ROLE_DOC, ROLE_RESEARCH],
+    "research":   [ROLE_RESEARCH],
 }
 
 
