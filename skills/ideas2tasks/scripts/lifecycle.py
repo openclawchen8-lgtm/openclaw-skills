@@ -16,20 +16,100 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# 從相對位置 import 同目錄的 scan / classify 模組
+# 從相對位置 import 同目錄的 scan / classify / task_status 模組
 sys.path.insert(0, str(Path(__file__).parent))
 from scan import scan_ideas
 from classify import classify_idea
+from task_status import scan_project_tasks, get_project_done_count
 
 
-def run_scan(ideas_dir: str) -> list:
-    """執行 scan.py，回傳 ideas 清單。"""
-    return scan_ideas(ideas_dir)
+PROCESSED_FILE = Path(__file__).parent / "processed_ideas.json"
+TASKS_DIR = Path("/Users/claw/Tasks")
+
+
+def load_processed() -> dict:
+    """讀取已處理 idea 記錄"""
+    if PROCESSED_FILE.exists():
+        try:
+            return json.loads(PROCESSED_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {"processed": {}}
+    return {"processed": {}}
+
+
+def save_processed(data: dict):
+    """儲存已處理 idea 記錄"""
+    PROCESSED_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def run_scan(ideas_dir: str, skip_processed: bool = True) -> list:
+    """執行 scan.py，回傳 ideas 清單。若 skip_processed=True，跳過已處理過的 idea。"""
+    all_ideas = scan_ideas(ideas_dir)
+    if not skip_processed:
+        return all_ideas
+    
+    processed = load_processed()
+    processed_filenames = set(processed.get("processed", {}).keys())
+    
+    new_ideas = [idea for idea in all_ideas if idea["filename"] not in processed_filenames]
+    skipped = len(all_ideas) - len(new_ideas)
+    if skipped > 0:
+        print(f"  🔄 跳過 {skipped} 個已處理 ideas")
+    
+    return new_ideas
 
 
 def run_classify(ideas: list) -> list:
-    """對每個 idea 執行 classify，回傳分類結果。"""
-    return [classify_idea(idea) for idea in ideas]
+    """
+    對每個 idea 執行 classify，並合併 Tasks/ 目錄的實際狀態。
+    
+    修2 核心邏輯：
+    - 先掃描 /Users/claw/Tasks/{project}/tasks/T*.md 的 Status
+    - Tasks/ 已 done 的 task → 從 pending 中移除，計入 done_count
+    - 兩邊合併判斷，避免 idea 檔沒標 done 但 Tasks/ 已完成的問題
+    """
+    results = []
+    for idea in ideas:
+        result = classify_idea(idea)
+        project_name = result.get("project_name", "")
+        project_dir = TASKS_DIR / project_name
+        
+        if project_dir.exists():
+            # 掃描 Tasks/ 目錄的實際狀態
+            tasks_status = scan_project_tasks(project_dir)
+            done_in_tasks = len(tasks_status.get("done", []))
+            
+            # 如果 Tasks/ 有已完成的 task，修正 idea 檔的 done_count
+            if done_in_tasks > 0:
+                old_done = result.get("done_count", 0)
+                if done_in_tasks > old_done:
+                    result["done_count"] = done_in_tasks
+                    result["_status_source"] = "Tasks/ (覆蓋 idea 檔)"
+                    
+                    # 從 pending tasks 中移除已在 Tasks/ 標 done 的
+                    # （比對標題去重太脆弱，用 task 數量差異修正）
+                    extra_done = done_in_tasks - old_done
+                    if extra_done > 0 and result.get("pending_count", 0) > 0:
+                        # 保留 pending 但調整計數
+                        adjusted_pending = max(0, result["pending_count"] - extra_done)
+                        result["pending_count"] = adjusted_pending
+                        result["total_actionable_tasks"] = min(
+                            result.get("total_actionable_tasks", 0),
+                            adjusted_pending
+                        )
+                        # 只保留還在 pending 的 tasks
+                        if extra_done <= len(result.get("tasks", [])):
+                            result["tasks"] = result["tasks"][extra_done:]
+                else:
+                    result["_status_source"] = "idea 檔 (與 Tasks/ 一致)"
+            else:
+                result["_status_source"] = "idea 檔 (Tasks/ 無 done)"
+        else:
+            result["_status_source"] = "idea 檔 (專案目錄不存在)"
+        
+        results.append(result)
+    
+    return results
 
 
 def build_telegram_summary(results: list, ideas_dir: str) -> str:
@@ -165,6 +245,18 @@ def main():
     if args.telegram:
         telegram_summary = build_telegram_summary(results, args.ideas_dir)
         print(telegram_summary)
+
+    # 標記本次處理的 ideas 為已處理
+    processed = load_processed()
+    for r in results:
+        idea_file = r.get("idea_file", "")
+        if idea_file:
+            processed["processed"][idea_file] = {
+                "timestamp": datetime.now().isoformat(),
+                "project": r.get("project_name", ""),
+                "task_count": r.get("pending_count", 0),
+            }
+    save_processed(processed)
 
     if args.dry_run:
         print("\n[DRY RUN] 未發送通知")

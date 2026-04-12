@@ -11,10 +11,15 @@ ideas2tasks executor.py
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+
+# 從相對位置 import task_status 工具
+sys.path.insert(0, str(Path(__file__).parent))
+from task_status import read_task_status, write_task_status
 
 # ===== 配置 =====
 TASKS_DIR = Path("/Users/claw/Tasks")
@@ -42,6 +47,23 @@ def load_status() -> dict:
         print("❌ lifecycle_status.json 不存在，請先執行 lifecycle.py")
         sys.exit(1)
     return json.loads(STATUS_FILE.read_text(encoding="utf-8"))
+
+
+def get_existing_titles(project_dir: Path) -> set:
+    """取得專案所有現有 task 的標題集合（用於 dedup）"""
+    tasks_dir = project_dir / "tasks"
+    titles = set()
+    if not tasks_dir.exists():
+        return titles
+    for f in tasks_dir.glob("T*.md"):
+        try:
+            first_line = f.read_text(encoding="utf-8").splitlines()[0]
+            # 格式: "# T001 - 標題文字" → 取標題部分
+            title = first_line.split(" - ", 1)[-1].strip() if " - " in first_line else first_line.strip()
+            titles.add(title)
+        except Exception:
+            pass
+    return titles
 
 
 def get_next_task_num(project_dir: Path) -> int:
@@ -77,6 +99,85 @@ _建立日期: {datetime.now().strftime('%Y-%m-%d')}_
 """
     task_file.write_text(content, encoding="utf-8")
     return task_file
+
+
+def sync_idea_done_markers(project_name: str, idea_file: str = None) -> int:
+    """
+    修1 核心實作：同步 Tasks/ 的 done 狀態回 idea 檔。
+    
+    流程：
+    1. 掃描 /Users/claw/Tasks/{project}/tasks/T*.md 的 Status
+    2. 找到 idea 檔對應的 task.N 行
+    3. 將已 done 的 task.N 標記為 "task.N done"
+    
+    回傳：更新的 done 標記數量
+    """
+    project_dir = TASKS_DIR / project_name
+    if not project_dir.exists():
+        return 0
+    
+    # 找到 idea 檔
+    if not idea_file:
+        # 嘗試從 project_name 推斷
+        idea_path = IDEAS_DIR / f"{project_name.replace('-', '_')}.txt"
+        if not idea_path.exists():
+            idea_path = IDEAS_DIR / f"{project_name}.txt"
+        if not idea_path.exists():
+            return 0
+    else:
+        idea_path = IDEAS_DIR / idea_file
+        if not idea_path.exists():
+            return 0
+    
+    # 讀取 idea 檔
+    try:
+        content = idea_path.read_text(encoding="utf-8")
+    except Exception:
+        return 0
+    
+    # 掃描 Tasks/ 目錄的 done 狀態
+    tasks_dir = project_dir / "tasks"
+    if not tasks_dir.exists():
+        return 0
+    
+    done_task_nums = set()
+    for task_file in sorted(tasks_dir.glob("T*.md")):
+        status = read_task_status(task_file)
+        if status == "done":
+            # T001 → 1
+            num_str = task_file.stem[1:]
+            if num_str.isdigit():
+                done_task_nums.add(int(num_str))
+    
+    if not done_task_nums:
+        return 0
+    
+    # 回寫 idea 檔：把 task.N 行改為 task.N done
+    lines = content.splitlines()
+    updated_count = 0
+    task_pattern = re.compile(r'^(task\.(\d+))(\s*)(done)?(.*)$', re.IGNORECASE)
+    
+    for i, line in enumerate(lines):
+        m = task_pattern.match(line.strip())
+        if m:
+            full_match = m.group(1)  # task.N
+            task_num = int(m.group(2))  # N
+            spacing = m.group(3)  # 原本的空白
+            already_done = m.group(4)  # 已有 done？
+            rest = m.group(5)  # 後面的內容
+            
+            if task_num in done_task_nums and not already_done:
+                # 把 "task.N ..." 改為 "task.N done ..."
+                old_line = lines[i]
+                new_line = old_line.replace(full_match + spacing, full_match + " done ", 1)
+                lines[i] = new_line
+                updated_count += 1
+    
+    if updated_count > 0:
+        idea_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"  🔄 {idea_path.name}: 回寫 {updated_count} 個 done 標記")
+    
+    return updated_count
 
 
 def update_project_readme(project_dir: Path, project_name: str, tasks: list):
@@ -132,8 +233,15 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
         
         tasks_info = []
         task_num = get_next_task_num(project_dir)
+        existing_titles = get_existing_titles(project_dir) if not dry_run else set()
+        skipped = 0
         
         for task in result.get("tasks", []):
+            # Dedup: 跳過標題已存在的 task
+            if task["title"] in existing_titles:
+                skipped += 1
+                continue
+            
             task_info = {
                 "num": task_num,
                 "title": task["title"],
@@ -146,6 +254,7 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
             
             if not dry_run:
                 create_task_file(project_dir / "tasks", task_num, task_info)
+                existing_titles.add(task["title"])
             
             tasks_info.append(task_info)
             created.append({
@@ -156,6 +265,9 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
                 "agent_id": ASSIGNEE_MAP.get(task["assignee"], "main"),
             })
             task_num += 1
+        
+        if skipped > 0:
+            print(f"  🔄 {project_name}: 跳過 {skipped} 個重複 tasks")
         
         if not dry_run:
             update_project_readme(project_dir, project_name, tasks_info)
@@ -209,6 +321,17 @@ def main():
     
     # 2. 建立 tasks
     created = create_tasks_from_status(status, args.dry_run)
+    
+    # 修1：同步回寫 idea 檔的 done 標記
+    if not args.dry_run:
+        sync_count = 0
+        for result in status.get("results", []):
+            project_name = result.get("project_name", "")
+            idea_file = result.get("filename", "")
+            count = sync_idea_done_markers(project_name, idea_file)
+            sync_count += count
+        if sync_count > 0:
+            print(f"\n  ✅ 共回寫 {sync_count} 個 idea 檔 done 標記")
     
     if args.dry_run:
         print("\n[DRY RUN] 以下 tasks 將被建立：")

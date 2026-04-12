@@ -6,7 +6,8 @@ description: |
   或要求掃描 Ideas 目錄、建立專案任務、分配團隊成員。
 metadata:
   emoji: "📋"
-  version: "1.0.0"
+  version: "2.1.0"
+  last_update: "2026-04-12"
 ---
 
 # ideas2tasks — 想法轉敏捷任務
@@ -160,3 +161,49 @@ cron 每天 **09:00 Asia/Taipei** 執行：
 3. **已標記 done 的 idea task** — 檔案內含 "done" 的行視為已完成，整體仍需分析是否還有未完成項
 4. **歸檔不刪除** — 移到 `_done/` 而非刪除
 5. **空檔案跳過** — 0 bytes 的 .txt 不處理
+
+## 🔧 狀態同步系統（v2.1.0）
+
+### 核心問題修復
+
+**問題：** 兩套狀態系統不同步
+- `Ideas/*.txt` 的 `task.N done` 標記
+- `Tasks/*/tasks/T*.md` 的 `Status: done`
+- Agent 完成後只改 T*.md → idea 檔未同步 → 重複建立
+
+**解決方案：**
+
+#### 1. 統一狀態讀取（`task_status.py`）
+- 正規化讀取（忽略大小寫、emoji、空白）
+- 統一寫入格式：`Status: pending` / `in-progress` / `done`
+
+#### 2. 狀態同步器（`sync_status.py`）
+- Task 完成 → 自動更新 idea 檔的 `task.N done` 標記
+- 提供手動同步工具：`python3 sync_status.py --fix-history`
+
+#### 3. Task 完成掛鉤（`task_completion_hook.py`）
+- Agent 完成時呼叫
+- 同步更新 Tasks/ 和 Ideas/ 的狀態
+- 用法：`python3 task_completion_hook.py /path/to/T001.md`
+
+#### 4. Lifecycle 增強
+- 優先看 Tasks/ 目錄的實際狀態
+- 合併判斷：Tasks/ 已 done → 覆蓋 idea 檔狀態
+
+### 維護命令
+
+```bash
+# 檢查同步狀態（預覽）
+python3 sync_status.py --dry-run
+
+# 修復歷史不一致
+python3 sync_status.py --fix-history
+
+# 掃描專案狀態
+python3 task_status.py /Users/claw/Tasks/<project-name>
+
+# 手動標記 task 完成（同時同步 idea 檔）
+python3 task_completion_hook.py /Users/claw/Tasks/<project>/tasks/T001.md
+```
+
+詳見：`docs/STATUS_SYNC_FIX.md`
