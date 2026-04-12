@@ -11,6 +11,7 @@ ideas2tasks executor.py
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -21,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from state_sync import (
     TASKS_DIR, IDEAS_DIR,
     get_tasks_dir_status, read_task_status, write_task_status,
-    get_existing_titles,
+    should_skip_task,
 )
 
 # ===== 配置 =====
@@ -143,13 +144,13 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
 
         tasks_info = []
         task_num = get_next_task_num(project_dir)
-        existing_titles = get_existing_titles(project_dir) if not dry_run else set()
-        skipped = 0
+        extra_norm_set = set()  # 同一批次的正規化標題，防止同 run 內重複
 
         for task in result.get("tasks", []):
-            # Dedup: 跳過標題已存在的 task
-            if task["title"] in existing_titles:
-                skipped += 1
+            # Dedup: 用 should_skip_task 檢查（精確+正規化+相似度三重比對）
+            skip, reason = should_skip_task(task["title"], project_dir, extra_norm_set)
+            if skip:
+                print(f"  🔄 {project_name}: 跳過「{task['title'][:40]}」— {reason}")
                 continue
 
             task_info = {
@@ -164,7 +165,14 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
 
             if not dry_run:
                 create_task_file(project_dir / "tasks", task_num, task_info)
-                existing_titles.add(task["title"])
+                # 把這次建的標題正規化後加入 extra_norm_set（防止同批次重複）
+                norm = task["title"].strip()
+                norm = re.sub(r'^T\d+\s*[-–—:]\s*', '', norm)
+                norm = re.sub(r'\d{4}[-/]\d{2}[-/]\d{2}', '', norm)
+                norm = re.sub(r'https?://\S+', '', norm)
+                norm = re.sub(r'[^\w\u4e00-\u9fff]', '', norm)
+                norm = re.sub(r'\s+', '', norm).lower()
+                extra_norm_set.add(norm)
 
             tasks_info.append(task_info)
             created.append({
@@ -175,9 +183,6 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
                 "agent_id": ASSIGNEE_MAP.get(task["assignee"], "main"),
             })
             task_num += 1
-
-        if skipped > 0:
-            print(f"  🔄 {project_name}: 跳過 {skipped} 個重複 tasks")
 
         if not dry_run and tasks_info:
             update_project_readme(project_dir, project_name, tasks_info)
