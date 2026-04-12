@@ -31,9 +31,10 @@ def read_task_status(task_file: Path) -> str:
         content = task_file.read_text(encoding="utf-8")
         for line in content.splitlines():
             stripped = line.strip()
-            m = re.match(r'^\-?\s*\*?Status\*?:\s*(.+)', stripped, re.IGNORECASE)
+            # 支援：**Status**: done / Status: done / status: done 等格式
+            m = re.match(r'^\-?\s*(\*+\s*)?Status(\s*\*+)?\s*:\s*(.+)', stripped, re.IGNORECASE)
             if m:
-                raw = re.sub(r'[\U00010000-\U0010ffff]', '', m.group(1).strip())
+                raw = re.sub(r'[\U00010000-\U0010ffff]', '', m.group(3).strip())
                 raw_lower = raw.lower()
                 if raw_lower in ("done", "✅", "✅ done", "done ✅"):
                     return "done"
@@ -60,7 +61,7 @@ def write_task_status(task_file: Path, status: str):
         found = False
         for line in lines:
             stripped = line.strip()
-            m = re.match(r'^(\-?\s*\*?Status\*?:\s*)(.+)', stripped, re.IGNORECASE)
+            m = re.match(r'^(\-?\s*(\*+\s*)?Status(\s*\*+)?\s*:\s*)(.+)', stripped, re.IGNORECASE)
             if m:
                 new_lines.append(f"- **Status**: {status}")
                 found = True

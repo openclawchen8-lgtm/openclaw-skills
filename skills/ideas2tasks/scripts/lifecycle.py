@@ -83,7 +83,7 @@ def build_telegram_summary(results: list, ideas_dir: str, sync_total: int = 0) -
 
     lines = [
         f"📋 Ideas 掃描 — {now}",
-        f"📊 待處理: {total_actionable} | Tasks/ 已完成: {total_done}",
+        f"📊 待處理: {total_actionable} | Tasks/ 已完成: {total_done} (含 merge 前次 {sync_total} 個)",
         "",
     ]
     if sync_total > 0:
