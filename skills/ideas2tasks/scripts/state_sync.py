@@ -257,6 +257,110 @@ def on_task_done(project_name: str, task_num: int) -> dict:
 
 # ===== 6. 統一清理（修復歷史 Status 格式）=====
 
+# ===== 7. 去重輔助（executor.py 用）=====
+
+import re as _re
+
+def _normalize_title(title: str) -> str:
+    """
+    正規化標題：移除數字、特殊符號、空白，統一大小寫。
+    用於跨 task 比對相似標題。
+    例如：
+      "T002 - 請檢查及修正 黃金存摺價格監控 的問題"
+    → "請檢查及修正黃金存摺價格監控的問題"
+    """
+    t = title.strip()
+    t = _re.sub(r'^T\d+\s*[-–—:]\s*', '', t)  # 移除 T001 - 前綴
+    t = _re.sub(r'\d{4}[-/]\d{2}[-/]\d{2}', '', t)  # 移除日期
+    t = _re.sub(r'https?://\S+', '', t)  # 移除 URL
+    t = _re.sub(r'[^\w\u4e00-\u9fff]', '', t)  # 移除特殊符號
+    t = _re.sub(r'\s+', '', t)  # 移除空白
+    return t.lower()
+
+
+def get_existing_titles(project_dir: Path | str) -> set:
+    """
+    取得專案現有 tasks 的標題集合。
+    回傳兩種集合：
+      - exact_set: 原始標題完全比對
+      - norm_set:  正規化後比對（防相似標題重複）
+    """
+    if isinstance(project_dir, str):
+        project_dir = Path(project_dir)
+    tasks_dir = project_dir / "tasks"
+
+    exact_set = set()
+    norm_set = set()
+
+    if not tasks_dir.exists():
+        return exact_set  # 空集合，兩者相同
+
+    for f in sorted(tasks_dir.glob("T*.md")):
+        try:
+            content = f.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            # 取第一行當標題（# T001 - ...）
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("# T"):
+                    # 提取 - 之後的內容
+                    m = _re.match(r'^#\s*T\d+\s*[-–—:]\s*(.+)', stripped)
+                    if m:
+                        title = m.group(1).strip()
+                        exact_set.add(title)
+                        norm_set.add(_normalize_title(title))
+                    break
+        except Exception:
+            pass
+
+    return exact_set
+
+
+def is_title_duplicate(new_title: str, existing_set: set) -> bool:
+    """
+    檢查新標題是否與現有任務重複。
+    用正規化比對，避免「T002 - xxx」vs「xxx」這類變體重複。
+    """
+    norm_new = _normalize_title(new_title)
+    if norm_new in existing_set:
+        return True
+    return False
+
+
+def should_skip_task(new_title: str, project_dir: Path | str, extra_norm_set: set = None) -> tuple:
+    """
+    判斷是否應跳過（不建立）這個 task。
+    回傳 (skip: bool, reason: str)
+    
+    策略：
+    1. 標題完全一致 → 跳過
+    2. 標題正規化後一致 → 跳過
+    3. 相似度 > 0.85 → 跳過（警告）
+    """
+    existing = get_existing_titles(project_dir)
+    if extra_norm_set:
+        existing = existing | extra_norm_set
+
+    norm_new = _normalize_title(new_title)
+
+    if new_title in existing:
+        return True, "標題完全一致"
+    if norm_new in existing:
+        return True, "正規化後標題一致"
+
+    # 相似度檢查（簡單）
+    for existing_title in list(existing)[:20]:  # 最多檢查20個
+        norm_ex = _normalize_title(existing_title)
+        # 簡單相似度：共同字符比例
+        common = set(norm_new) & set(norm_ex)
+        if len(common) >= max(len(norm_new), len(norm_ex)) * 0.8 and len(norm_new) > 10:
+            return True, f"相似標題：「{existing_title[:30]}」"
+
+    return False, ""
+
+
+# ===== 8. 統一清理（修復歷史 Status 格式）=====
+
 def normalize_all_task_statuses(project_name: str = None):
     """
     遍歷所有或指定專案的 task 檔，統一 Status 格式。
