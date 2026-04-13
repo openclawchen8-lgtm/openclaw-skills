@@ -14,6 +14,7 @@ import json
 import re
 import subprocess
 import sys
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -24,6 +25,12 @@ from state_sync import (
     get_tasks_dir_status, read_task_status, write_task_status,
     should_skip_task,
 )
+
+# GitHub 設定（executor.py --github 用）
+GH_OWNER = "openclawchen8-lgtm"
+GH_REPO  = "openclaw-tasks"
+GH_PROJECT_ID = "PVT_kwHOD-tSg84BUX2a"
+GH_PROJECT_NUMBER = 1
 
 # ===== 配置 =====
 STATUS_FILE = Path(__file__).parent / "lifecycle_status.json"
@@ -217,6 +224,108 @@ def build_telegram_report(created: list, spawned: list = None) -> str:
         lines.append("📊 統計：建立 {} 個 tasks".format(len(created)))
 
     return "\n".join(lines)
+
+
+# ─────────────────────────────────────────
+# GitHub Issue 同步（executor.py --github 用）
+# ─────────────────────────────────────────
+
+def gh_run(cmd: str, timeout: int = 15) -> subprocess.CompletedProcess:
+    """執行 gh CLI，⚠️ 必須用完整字串 + shell=True"""
+    return subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+
+
+def gh_gql(query: str) -> dict:
+    """執行 GitHub GraphQL query"""
+    cmd = "gh api graphql --method POST --field 'query=" + query + "'"
+    r = gh_run(cmd)
+    if not r.stdout.strip():
+        return {}
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError:
+        return {}
+
+
+def sync_tasks_to_github(created: list) -> list:
+    """
+    將新建立的 tasks 同步到 GitHub Issues + Board。
+
+    created: [{project, task_num, title, assignee}]
+    回傳: [{task_num, issue_url, added_to_board}]
+    """
+    results = []
+    for c in created:
+        proj = c["project"]
+        tnum = c["task_num"]
+        tid = f"T{tnum:03d}"
+        task_md_path = TASKS_DIR / proj / "tasks" / f"{tid}.md"
+
+        if not task_md_path.exists():
+            print(f"  ⚠️ 找不到 {task_md_path}，跳過")
+            continue
+
+        # 讀取完整 markdown 作為 body
+        raw_body = task_md_path.read_text(encoding="utf-8")
+
+        # 建 GitHub blob URL
+        github_blob_url = (
+            f"https://github.com/{GH_OWNER}/{GH_REPO}"
+            f"/blob/main/{proj}/tasks/{tid}.md"
+        )
+
+        # 附加 GitHub URL 到 body 最後
+        full_body = raw_body.strip() + f"\n\n---\n📂 GitHub: {github_blob_url}\n"
+
+        # 寫入 body file（避免 shell 換行問題）
+        body_file = f"/tmp/gh_body_{os.getpid()}_{tnum}.txt"
+        with open(body_file, "w") as f:
+            f.write(full_body)
+
+        title = f"[{proj}] {tid} — {c['title'][:60]}"
+        title_esc = title.replace('"', '\\"')
+
+        cmd = (f'gh issue create --repo {GH_OWNER}/{GH_REPO}'
+               f' --title "{title_esc}" --body-file {body_file}')
+        r = gh_run(cmd)
+        os.unlink(body_file)
+
+        if r.returncode != 0:
+            print(f"  ❌ {tid} 建立 Issue 失敗: {r.stderr[:80]}")
+            results.append({"task_num": tnum, "issue_url": None, "added_to_board": False})
+            continue
+
+        # 從 output 抓 issue number
+        m = re.search(r'/issues/(\d+)', r.stdout)
+        issue_num = int(m.group(1)) if m else None
+        issue_url = f"https://github.com/{GH_OWNER}/{GH_REPO}/issues/{issue_num}" if issue_num else None
+
+        # 加入 Board
+        added_board = False
+        if issue_num:
+            # 拿 issue node_id
+            node_cmd = f'gh api /repos/{GH_OWNER}/{GH_REPO}/issues/{issue_num} --jq .node_id'
+            nr = gh_run(node_cmd)
+            content_id = nr.stdout.strip().strip('"') if nr.returncode == 0 else None
+
+            if content_id:
+                gql = (f"mutation{{addProjectV2ItemById(input:{{projectId:\"{GH_PROJECT_ID}\","
+                       f"contentId:\"{content_id}\"}}){{clientMutationId}}}}")
+                d = gh_gql(gql)
+                added_board = d.get("data", {}).get("addProjectV2ItemById", {}).get("clientMutationId") is None
+
+        # 把 GitHub URL 寫回 T*.md（加在最末）
+        with open(task_md_path, encoding="utf-8") as f:
+            content = f.read()
+        if "📂 GitHub:" not in content:
+            content = content.rstrip() + f"\n\n📂 GitHub: {issue_url}\n"
+            task_md_path.write_text(content, encoding="utf-8")
+
+        status_emoji = "✅" if added_board else "⚠️"
+        print(f"  {status_emoji} {tid} → Issue #{issue_num} | Board: {'✅' if added_board else '❌'}")
+        results.append({"task_num": tnum, "issue_url": issue_url, "added_to_board": added_board})
+
+    return results
 
 
 def main():
