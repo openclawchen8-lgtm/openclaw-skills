@@ -333,6 +333,7 @@ def main():
     parser.add_argument("--no-spawn", action="store_true", help="只建立 tasks，不 spawn agents")
     parser.add_argument("--dry-run", action="store_true", help="乾跑模式")
     parser.add_argument("--normalize", action="store_true", help="執行前先統一所有 Tasks/ 的 Status 格式")
+    parser.add_argument("--github", action="store_true", help="新 tasks 建立後同步到 GitHub Issues + Board")
     args = parser.parse_args()
 
     print("🚀 executor.py 啟動")
@@ -350,6 +351,14 @@ def main():
 
     # 2. 建立 tasks
     created = create_tasks_from_status(status, args.dry_run)
+
+    # ── GitHub Issue 同步（executor.py --github 用）──────────────────────────
+    if args.github and created:
+        print("\n🌐 同步 GitHub Issues...")
+        gh_results = sync_tasks_to_github(created)
+        gh_ok = sum(1 for r in gh_results if r["issue_url"])
+        print(f"  ✅ {gh_ok}/{len(gh_results)} 個 Issue 已建立")
+    # ────────────────────────────────────────────────────────────────────────
 
     if args.dry_run:
         print("\n[DRY RUN] 以下 tasks 將被建立：")
