@@ -255,7 +255,7 @@ def on_task_done(project_name: str, task_num: int) -> dict:
     }
 
 
-# ===== 6. 統一清理（修復歷史 Status 格式）=====
+# ===== 6. 去重輔助（前置：比對工具函式）=====
 
 # ===== 7. 去重輔助（executor.py 用）=====
 
@@ -359,7 +359,7 @@ def should_skip_task(new_title: str, project_dir: Path | str, extra_norm_set: se
     return False, ""
 
 
-# ===== 8. 統一清理（修復歷史 Status 格式）=====
+# ===== 8. 批量狀態格式統一（修復歷史 Status）=====
 
 def normalize_all_task_statuses(project_name: str = None):
     """

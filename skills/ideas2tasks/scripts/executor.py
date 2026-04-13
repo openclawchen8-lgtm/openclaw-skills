@@ -39,6 +39,7 @@ ASSIGNEE_MAP = {
     "碼農 2 號": "agent-coder2",
     "安安": "agent-ann",
     "樂樂": "agent-lele",
+    "研研": "agent-researcher",
 }
 
 # ===== 函數 =====
