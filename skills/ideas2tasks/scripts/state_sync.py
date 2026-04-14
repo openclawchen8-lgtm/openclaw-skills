@@ -279,42 +279,67 @@ def _normalize_title(title: str) -> str:
     return t.lower()
 
 
-def get_existing_titles(project_dir: Path | str) -> set:
+def get_existing_titles(project_dir: Path | str) -> dict:
     """
-    取得專案現有 tasks 的標題集合。
-    回傳兩種集合：
-      - exact_set: 原始標題完全比對
-      - norm_set:  正規化後比對（防相似標題重複）
+    取得專案現有 tasks 的標題和描述。
+    回傳 dict：
+      - "exact_set": 原始標題集合
+      - "norm_set":  正規化標題集合
+      - "desc_norm_set": 正規化描述前 100 字元集合（防內容重複但標題不同）
+    
+    修正紀錄（2026-04-14）：
+    舊版回傳 set，只存標題。
+    新版回傳 dict，新增 desc_norm_set 做描述比對。
     """
     if isinstance(project_dir, str):
         project_dir = Path(project_dir)
     tasks_dir = project_dir / "tasks"
 
-    exact_set = set()
-    norm_set = set()
+    result = {"exact_set": set(), "norm_set": set(), "desc_norm_set": set()}
 
     if not tasks_dir.exists():
-        return exact_set  # 空集合，兩者相同
+        return result
 
     for f in sorted(tasks_dir.glob("T*.md")):
         try:
             content = f.read_text(encoding="utf-8")
             lines = content.splitlines()
-            # 取第一行當標題（# T001 - ...）
+            # 取標題行（# T001 - ...）
             for line in lines:
                 stripped = line.strip()
                 if stripped.startswith("# T"):
-                    # 提取 - 之後的內容
                     m = _re.match(r'^#\s*T\d+\s*[-–—:]\s*(.+)', stripped)
                     if m:
                         title = m.group(1).strip()
-                        exact_set.add(title)
-                        norm_set.add(_normalize_title(title))
+                        result["exact_set"].add(title)
+                        result["norm_set"].add(_normalize_title(title))
                     break
+            
+            # 取描述（## 描述 後的第一段）
+            desc = _extract_description(content)
+            if desc:
+                result["desc_norm_set"].add(_normalize_title(desc[:100]))
         except Exception:
             pass
 
-    return exact_set
+    return result
+
+
+def _extract_description(content: str) -> str:
+    """從 T*.md 內容提取描述段落。"""
+    in_desc = False
+    desc_lines = []
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## 描述") or stripped.startswith("## 描"):
+            in_desc = True
+            continue
+        if in_desc:
+            if stripped.startswith("## ") or stripped.startswith("---"):
+                break
+            if stripped:
+                desc_lines.append(stripped)
+    return " ".join(desc_lines)
 
 
 def is_title_duplicate(new_title: str, existing_set: set) -> bool:
@@ -328,7 +353,7 @@ def is_title_duplicate(new_title: str, existing_set: set) -> bool:
     return False
 
 
-def should_skip_task(new_title: str, project_dir: Path | str, extra_norm_set: set = None) -> tuple:
+def should_skip_task(new_title: str, project_dir: Path | str, extra_norm_set: set = None, new_desc: str = "") -> tuple:
     """
     判斷是否應跳過（不建立）這個 task。
     回傳 (skip: bool, reason: str)
@@ -336,23 +361,33 @@ def should_skip_task(new_title: str, project_dir: Path | str, extra_norm_set: se
     策略：
     1. 標題完全一致 → 跳過
     2. 標題正規化後一致 → 跳過
-    3. 相似度 > 0.85 → 跳過（警告）
+    3. 描述前 100 字元正規化後一致 → 跳過（防標題截斷但內容相同）
+    4. 相似度 > 0.85 → 跳過（警告）
+    
+    修正紀錄（2026-04-14）：
+    新增第 3 層描述比對，防止標題被截斷但內容完全相同的重複。
     """
     existing = get_existing_titles(project_dir)
     if extra_norm_set:
-        existing = existing | extra_norm_set
+        # 向下兼容：extra_norm_set 是舊的 set 格式
+        existing["norm_set"] = existing["norm_set"] | extra_norm_set
 
     norm_new = _normalize_title(new_title)
 
-    if new_title in existing:
+    if new_title in existing["exact_set"]:
         return True, "標題完全一致"
-    if norm_new in existing:
+    if norm_new in existing["norm_set"]:
         return True, "正規化後標題一致"
+    
+    # 第 3 層：描述比對
+    if new_desc:
+        norm_desc = _normalize_title(new_desc[:100])
+        if norm_desc and norm_desc in existing["desc_norm_set"]:
+            return True, "描述內容重複"
 
     # 相似度檢查（簡單）
-    for existing_title in list(existing)[:20]:  # 最多檢查20個
+    for existing_title in list(existing["exact_set"])[:20]:
         norm_ex = _normalize_title(existing_title)
-        # 簡單相似度：共同字符比例
         common = set(norm_new) & set(norm_ex)
         if len(common) >= max(len(norm_new), len(norm_ex)) * 0.8 and len(norm_new) > 10:
             return True, f"相似標題：「{existing_title[:30]}」"

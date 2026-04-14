@@ -156,8 +156,9 @@ def create_tasks_from_status(status: dict, dry_run: bool = False) -> list:
         extra_norm_set = set()  # 同一批次的正規化標題，防止同 run 內重複
 
         for task in result.get("tasks", []):
-            # Dedup: 用 should_skip_task 檢查（精確+正規化+相似度三重比對）
-            skip, reason = should_skip_task(task["title"], project_dir, extra_norm_set)
+            # Dedup: 用 should_skip_task 檢查（精確+正規化+描述+相似度四重比對）
+            task_desc = task.get("description", task.get("body", ""))
+            skip, reason = should_skip_task(task["title"], project_dir, extra_norm_set, new_desc=task_desc)
             if skip:
                 print(f"  🔄 {project_name}: 跳過「{task['title'][:40]}」— {reason}")
                 continue
@@ -248,6 +249,52 @@ def gh_gql(query: str) -> dict:
         return {}
 
 
+def _humanize_issue_title(raw_title: str, max_len: int = 72) -> str:
+    """
+    將 idea 檔的原始 task 標題轉為人類可讀的 GitHub Issue 標題。
+    
+    規則：
+    1. 移除開頭 URL（保留 URL 後的描述文字）
+    2. 移除「請」「幫我」等祈使句開頭（保留核心動作）
+    3. 截斷到 max_len，避免 GitHub Issue 列表看不清
+    4. 截斷時在斷句標點處切，不硬切
+    
+    修正紀錄（2026-04-14）：
+    舊版直接截斷 title[:60]，URL 開頭的標題截完完全看不懂。
+    """
+    t = raw_title.strip()
+    
+    # 移除任何位置的 URL（idea 檔常夾帶連結，URL 不該出現在 Issue 標題）
+    t = re.sub(r'https?://\S+', '', t)
+    
+    # 清理多餘空白
+    t = re.sub(r'\s+', ' ', t).strip()
+    
+    # 移除常見祈使句開頭
+    t = re.sub(r'^(請|幫我|請幫我|我要|需要|想要)\s*', '', t)
+    
+    # 如果清理後為空，用原始標題（fallback）
+    if not t.strip():
+        t = raw_title.strip()
+    
+    # 截斷：優先在句號/問號/頓號/逗號處切
+    if len(t) > max_len:
+        # 找最後一個斷句標點
+        cut = max_len
+        for sep in ['。', '？', '！', '；', '、', '，', '：', ' ']:
+            pos = t.rfind(sep, 0, max_len)
+            if pos > max_len // 2:  # 至少保留一半長度
+                cut = pos + 1
+                break
+        t = t[:cut].rstrip('，。、；：！？ ')
+    
+    # 如果還是太長，硬切
+    if len(t) > max_len:
+        t = t[:max_len - 1] + '…'
+    
+    return t
+
+
 def sync_tasks_to_github(created: list) -> list:
     """
     將新建立的 tasks 同步到 GitHub Issues + Board。
@@ -283,7 +330,7 @@ def sync_tasks_to_github(created: list) -> list:
         with open(body_file, "w") as f:
             f.write(full_body)
 
-        title = f"[{proj}] {tid} — {c['title'][:60]}"
+        title = f"[{proj}] {tid} — {_humanize_issue_title(c['title'])}"
         title_esc = title.replace('"', '\\"')
 
         cmd = (f'gh issue create --repo {GH_OWNER}/{GH_REPO}'

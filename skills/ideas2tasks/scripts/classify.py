@@ -68,32 +68,51 @@ def detect_category(text: str) -> str:
 
 def parse_task_dot_n_format(content: str) -> tuple[list[dict], list[dict]]:
     """
-    解析 task.N 格式（原有邏輯）。
+    解析 task.N 格式。
     
     規則：
     - 行首 "task.N done" / "task.N_done" → 該 task 已完成
     - 行首 "task.N" 無 done → 待執行
-    - 行首無 task.N 的自由內容 → 依附到最近一個 task
+    - task.N 後的內容只取到下一個 task.N 或連續空行為止
+    - 連續空行後的內容視為「對話雜訊」，不併入任何 task
+    
+    修正紀錄（2026-04-14）：
+    舊版會把 task.N 後所有非空行都吃進 body，導致對話歷史被誤拆為 task。
+    新版遇到連續空行（≥2 空行或段落分隔符 ----）就停止收集該 task 的 body。
     """
     lines = content.splitlines()
     done_tasks = []
     pending_tasks = []
 
     task_pattern = re.compile(r'^task\.(\d+)\s*(done)?[\s_]*(.*)', re.IGNORECASE)
+    # 偵測段落分隔符（----, ===, *** 等）
+    separator_pattern = re.compile(r'^[-=_*]{3,}\s*$')
     current_task = None
     current_body_lines = []
+    consecutive_blank = 0  # 連續空行計數
+    body_closed = False     # 該 task 的 body 是否已關閉
+
+    def flush_task():
+        nonlocal current_task, current_body_lines, body_closed, consecutive_blank
+        if current_task:
+            body = "\n".join(current_body_lines).strip()
+            entry = {"title": current_task["raw_title"], "body": body, "line": current_task["line"]}
+            if current_task["done"]:
+                done_tasks.append(entry)
+            else:
+                pending_tasks.append(entry)
+        current_task = None
+        current_body_lines = []
+        body_closed = False
+        consecutive_blank = 0
 
     for i, line in enumerate(lines):
-        m = task_pattern.match(line.strip())
+        stripped = line.strip()
+        m = task_pattern.match(stripped)
+
         if m:
-            if current_task:
-                body = "\n".join(current_body_lines).strip()
-                entry = {"title": current_task["raw_title"], "body": body, "line": current_task["line"]}
-                if current_task["done"]:
-                    done_tasks.append(entry)
-                else:
-                    pending_tasks.append(entry)
-            current_body_lines = []
+            # 遇到新的 task.N → 先 flush 舊的
+            flush_task()
             task_num, is_done, rest = m.group(1), m.group(2), m.group(3)
             raw_title = f"task.{task_num}" + (" done" if is_done else "")
             current_task = {
@@ -105,18 +124,27 @@ def parse_task_dot_n_format(content: str) -> tuple[list[dict], list[dict]]:
             }
             if rest:
                 current_body_lines.append(rest)
-        elif current_task is not None:
-            stripped = line.strip()
-            if stripped:
-                current_body_lines.append(line)
+            continue
 
-    if current_task:
-        body = "\n".join(current_body_lines).strip()
-        entry = {"title": current_task["raw_title"], "body": body, "line": current_task["line"]}
-        if current_task["done"]:
-            done_tasks.append(entry)
-        else:
-            pending_tasks.append(entry)
+        if current_task is not None and not body_closed:
+            # 偵測段落分隔符 → 立即關閉 body 收集
+            if separator_pattern.match(stripped):
+                body_closed = True
+                continue
+
+            if stripped == "":
+                consecutive_blank += 1
+                if consecutive_blank >= 2:
+                    # 連續 2 行空白 → 關閉 body 收集
+                    body_closed = True
+                continue
+            else:
+                consecutive_blank = 0
+                current_body_lines.append(stripped)
+        # else: 雜訊行，忽略
+
+    # flush 最後一個 task
+    flush_task()
 
     return done_tasks, pending_tasks
 

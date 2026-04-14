@@ -12,7 +12,11 @@ ideas2tasks lifecycle.py
 
 import argparse
 import json
+import os
+import shutil
 import sys
+import urllib.request
+import urllib.parse
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +25,94 @@ sys.path.insert(0, str(Path(__file__).parent))
 from scan import scan_ideas
 from classify import classify_idea
 from state_sync import merge_classify_with_tasks_status, TASKS_DIR, sync_idea_to_task_done
+
+
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+
+def archive_done_ideas(results: list, ideas_dir: str, dry_run: bool = False) -> list[str]:
+    """
+    歸檔所有 task 已完成的 idea 檔到 _done/ 目錄。
+    條件：done_count >= total_task_count 且 Tasks/ 無 pending。
+    回傳：已歸檔的檔名列表。
+    
+    修正紀錄（2026-04-14）：
+    舊版沒有歸檔機制，idea 檔永遠留在原地。
+    新版在 sync_done 之後自動搬移全 done 的 idea 到 _done/。
+    """
+    done_dir = Path(ideas_dir) / "_done"
+    done_dir.mkdir(exist_ok=True)
+    archived = []
+    
+    for r in results:
+        # 歸檔條件：所有 task 都 done（idea 檔標記 + Tasks/ 實際狀態）
+        pending_in_tasks = r.get("pending_in_tasks", 0)
+        in_progress_in_tasks = r.get("in_progress_in_tasks", 0)
+        pending_count = r.get("pending_count", 0)
+        total_actionable = r.get("total_actionable_tasks", 0)
+        
+        # 完全無 pending 才歸檔
+        if pending_in_tasks == 0 and in_progress_in_tasks == 0 and pending_count == 0 and total_actionable == 0:
+            idea_file = r.get("idea_file", "")
+            if not idea_file:
+                continue
+            idea_path = Path(idea_file)
+            if not idea_path.exists():
+                continue
+            
+            dest = done_dir / idea_path.name
+            if dest.exists():
+                # _done/ 裡已有同名檔案，加時間戳
+                stem = idea_path.stem
+                suffix = idea_path.suffix
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                dest = done_dir / f"{stem}_{ts}{suffix}"
+            
+            if dry_run:
+                print(f"  📦 [DRY RUN] 會歸檔: {idea_path.name} → _done/")
+            else:
+                shutil.move(str(idea_path), str(dest))
+                print(f"  📦 歸檔: {idea_path.name} → _done/")
+            
+            archived.append(idea_path.name)
+    
+    return archived
+
+
+def _load_telegram_config() -> tuple[str, str]:
+    """從 gold_monitor_config.json 讀取 Telegram 設定。"""
+    config_path = Path.home() / ".qclaw" / "gold_monitor_config.json"
+    if config_path.exists():
+        try:
+            data = json.loads(config_path.read_text(encoding="utf-8"))
+            return (data.get("telegram_bot_token", ""), data.get("telegram_chat_id", ""))
+        except Exception:
+            pass
+    return ("", "")
+
+
+def send_telegram(text: str) -> bool:
+    """發送 Telegram 訊息，回傳成功與否。"""
+    bot_token = TELEGRAM_BOT_TOKEN
+    chat_id = TELEGRAM_CHAT_ID
+    if not bot_token or not chat_id:
+        bot_token, chat_id = _load_telegram_config()
+    if not bot_token or not chat_id:
+        print("⚠️ 未找到 Telegram 設定（環境變數或 ~/.qclaw/gold_monitor_config.json）")
+        return False
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    data = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": text,
+    }).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception as e:
+        print(f"⚠️ Telegram 發送失敗: {e}")
+        return False
 
 
 PROCESSED_FILE = Path(__file__).parent / "processed_ideas.json"
@@ -165,7 +257,9 @@ def main():
     args = parser.parse_args()
 
     # 1. 掃描 ideas
-    ideas = run_scan(args.ideas_dir, skip_processed=not args.force_rescan)
+    # --telegram 時永遠做 fresh scan（不依賴 processed 記錄），確保狀態變化一定通知
+    skip = not args.force_rescan and not args.telegram
+    ideas = run_scan(args.ideas_dir, skip_processed=skip)
 
     # 2. 分類（合併 Tasks/ 實際狀態）
     results = run_classify(ideas)
@@ -179,6 +273,18 @@ def main():
             sync = sync_idea_to_task_done(project_name)
             if sync.get("done", 0) > 0:
                 sync_total += sync["done"]
+
+    # 3.5 歸檔：全 done 的 idea → _done/
+    archived = archive_done_ideas(results, args.ideas_dir, dry_run=args.dry_run)
+    if archived and not args.telegram:
+        print(f"  📦 歸檔了 {len(archived)} 個已完成的 idea")
+
+    # 從 processed_ideas.json 移除已歸檔的條目
+    if archived and not args.dry_run:
+        processed = load_processed()
+        for fname in archived:
+            processed["processed"].pop(fname, None)
+        save_processed(processed)
 
     if args.json:
         output = {
@@ -215,7 +321,21 @@ def main():
 
     # Telegram 格式
     if args.telegram:
-        print(build_telegram_summary(results, args.ideas_dir, sync_total))
+        total_actionable = sum(r["total_actionable_tasks"] for r in results)
+        if total_actionable == 0:
+            # 無待處理 → 仍告知已執行完畢（console 可見）
+            print("📋 Ideas scan 完成，無待處理 tasks")
+            return
+        summary = build_telegram_summary(results, args.ideas_dir, sync_total)
+        if not args.dry_run:
+            ok = send_telegram(summary)
+            if ok:
+                print(f"✅ Telegram 通知已發送")
+            else:
+                print(summary)  # 發送失敗時 fallback print
+        else:
+            print(summary)
+        return
 
     # 標記本次處理的 ideas 為已處理
     processed = load_processed()
