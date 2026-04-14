@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 ideas2tasks executor.py
 讀取 lifecycle_status.json → 建立 tasks → spawn agents → 彙報結果

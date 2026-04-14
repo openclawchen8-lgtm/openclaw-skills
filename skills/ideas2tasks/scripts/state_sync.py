@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 ideas2tasks state_sync.py
 狀態同步核心：Tasks/ 目錄 ↔ Idea 檔的雙向同步

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 ideas2tasks lifecycle.py
 每日 cron 執行：掃描 Ideas → 分類 → 彙報進度摘要

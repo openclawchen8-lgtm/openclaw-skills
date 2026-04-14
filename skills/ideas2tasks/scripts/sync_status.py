@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 ideas2tasks sync_status.py
 狀態同步器：確保 Tasks/ 目錄與 Ideas/ 檔案狀態一致。

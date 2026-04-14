@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 ideas2tasks task_completion_hook.py
 當 Agent 完成任務時呼叫，同步更新 Tasks/ 和 Ideas/ 的狀態。
