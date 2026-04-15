@@ -37,7 +37,7 @@ metadata:
 | 角色 | 名稱 | OpenClaw Agent ID | Workspace |
 |------|------|-------------------|-----------|
 | Planner | **豪（用戶本人）** | `main` | `/Users/claw/.qclaw/workspace/` |
-| Coder 1 | 碼農 1 號 | `agent-f937014d`（代可行） | `~/.qclaw/workspace-agent-f937014d/` |
+| Coder 1 | 碼農 1 號 | `agent-coder1` | `~/.qclaw/workspace-coder1/` |
 | Coder 2 | 碼農 2 號 | `agent-coder2` | `~/.qclaw/workspace-coder2/` |
 | DocWriter | 安安 | `agent-ann` | `~/.qclaw/workspace-ann/` |
 | Reviewer | 樂樂 | `agent-lele` | `~/.qclaw/workspace-lele/` |

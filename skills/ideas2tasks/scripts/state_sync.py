@@ -418,3 +418,42 @@ def normalize_all_task_statuses(project_name: str = None):
                 write_task_status(f, current)
                 fixed += 1
     return fixed
+
+
+# ===== CLI 入口 =====
+if __name__ == "__main__":
+    import argparse, json, sys
+
+    parser = argparse.ArgumentParser(description="state_sync.py CLI")
+    sub = parser.add_subparsers(dest="cmd")
+
+    p_sync = sub.add_parser("sync", help="同步指定專案的 idea 檔")
+    p_sync.add_argument("project", help="專案名稱（如 gold-monitor-issue）")
+
+    p_on_done = sub.add_parser("on_done", help="task 標 done 時的同步鉤子")
+    p_on_done.add_argument("project", help="專案名稱")
+    p_on_done.add_argument("task_num", type=int, help="任務編號（1,2,...）")
+
+    p_norm = sub.add_parser("normalize", help="統一所有 task 的 Status 格式")
+    p_norm.add_argument("project", nargs="?", default=None, help="專案名稱（可省略=全部）")
+
+    args = parser.parse_args()
+
+    if args.cmd == "sync":
+        result = sync_idea_to_task_done(args.project)
+        print(json.dumps(result, ensure_ascii=False))
+        sys.exit(0)
+
+    elif args.cmd == "on_done":
+        result = on_task_done(args.project, args.task_num)
+        print(json.dumps(result, ensure_ascii=False))
+        sys.exit(0)
+
+    elif args.cmd == "normalize":
+        fixed = normalize_all_task_statuses(args.project)
+        print(json.dumps({"fixed": fixed}, ensure_ascii=False))
+        sys.exit(0)
+
+    else:
+        parser.print_help()
+        sys.exit(1)
