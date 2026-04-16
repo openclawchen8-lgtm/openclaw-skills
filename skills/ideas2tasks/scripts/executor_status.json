@@ -1,5 +1,27 @@
 {
-  "timestamp": "2026-04-16T18:47:17.551617",
-  "created_count": 0,
-  "created": []
+  "timestamp": "2026-04-16T19:47:32.141692",
+  "created_count": 3,
+  "created": [
+    {
+      "project": "gold-monitor-issue",
+      "task_num": 5,
+      "title": "請檢查及修正 黃金存摺價格監控 的問題。發現歷史資料有誤，故顯形無法正常顯示。",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "gold-monitor-issue",
+      "task_num": 6,
+      "title": "更新為同時抓取及顯示 黃金存摺 賣出 買入 價格？",
+      "assignee": "碼農 2 號",
+      "agent_id": "agent-coder2"
+    },
+    {
+      "project": "openclaw-scrum",
+      "task_num": 8,
+      "title": "本地目前團隊是否需要增加一位資料研究員，研究 增加一位資料研究員 的相關配置檔，並給出一個推薦及完整的配置檔。",
+      "assignee": "碼農 1 號",
+      "agent_id": "agent-coder1"
+    }
+  ]
 }
