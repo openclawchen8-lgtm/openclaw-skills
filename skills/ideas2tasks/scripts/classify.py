@@ -394,7 +394,7 @@ def parse_all_formats(content: str) -> tuple[list[dict], list[dict]]:
         return [], []
 
     # 返回 (pending_tasks, done_tasks) 與內部變量一致
-    return best_pending, best_done
+    return best_done, best_pending
 
 
 def parse_done_markers(content: str) -> tuple[list[dict], list[dict]]:

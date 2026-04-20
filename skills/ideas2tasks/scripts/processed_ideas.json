@@ -1,19 +1,14 @@
 {
   "processed": {
     "gold-monitor-issue.txt": {
-      "timestamp": "2026-04-14T13:18:38.059165",
+      "timestamp": "2026-04-19T16:25:23.235951",
       "project": "gold-monitor-issue",
-      "task_count": 3
-    },
-    "github-data-review.txt": {
-      "timestamp": "2026-04-14T13:18:38.059167",
-      "project": "github-data-review",
       "task_count": 2
     },
-    "openclaw-scrum.txt": {
-      "timestamp": "2026-04-14T13:18:38.059161",
-      "project": "openclaw-scrum",
-      "task_count": 3
+    "github-data-review.txt": {
+      "timestamp": "2026-04-19T16:25:23.235958",
+      "project": "github-data-review",
+      "task_count": 2
     },
     "working-issue.txt": {
       "timestamp": "2026-04-14T13:18:38.059156",
