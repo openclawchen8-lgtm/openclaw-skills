@@ -1,12 +1,7 @@
 {
   "processed": {
-    "gold-monitor-issue.txt": {
-      "timestamp": "2026-04-19T16:25:23.235951",
-      "project": "gold-monitor-issue",
-      "task_count": 2
-    },
     "github-data-review.txt": {
-      "timestamp": "2026-04-19T16:25:23.235958",
+      "timestamp": "2026-04-20T17:59:16.976397",
       "project": "github-data-review",
       "task_count": 2
     },
@@ -28,6 +23,11 @@
     "member-backup.txt": {
       "timestamp": "2026-04-14T13:18:38.059177",
       "project": "member-backup",
+      "task_count": 0
+    },
+    "gold-monitor-issue.txt": {
+      "timestamp": "2026-04-20T17:59:16.976371",
+      "project": "gold-monitor-issue",
       "task_count": 0
     }
   }

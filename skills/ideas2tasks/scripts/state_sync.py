@@ -43,6 +43,8 @@ def read_task_status(task_file: Path) -> str:
                     return "in-progress"
                 if raw_lower in ("pending", "todo", "待處理"):
                     return "pending"
+                if raw_lower in ("skip", "skipped", "⏭️"):
+                    return "skip"
     except Exception:
         pass
     return "pending"
