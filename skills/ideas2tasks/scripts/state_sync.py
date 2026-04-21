@@ -489,7 +489,22 @@ def scan_tasks_dir() -> list[dict]:
         done_count = 0
         skip_count = 0
 
-        for task_file in sorted(tasks_dir.glob("T*.md")):
+        # 使用正規表達式明確匹配主任務 + 子任務：
+        #   T001, T002, ...  → 主任務
+        #   T002-1, T003-A, T006-1 等 → 子任務
+        # glob("T*.md") 已能匹配，但用 re 過濾更精確、可讀
+        # 子任務編號模式（4 種）：
+        #   T001      - 主任務（純數字）
+        #   T002-1    - 子任務：數字 dash 數字
+        #   T003-A    - 子任務：數字 dash 字母
+        #   T006-A    - 子子任務：數字 dash 字母 dash 字母（罕見）
+        # 正則：T + 數字 + 可選( dash數字 | dash字母可選再接dash字母 )
+        task_files = [
+            f for f in sorted(tasks_dir.iterdir())
+            if f.is_file() and f.suffix == ".md"
+            and re.match(r"^T\d+(-\d+|-[A-Z](-[A-Z])?)?\.md$", f.name)
+        ]
+        for task_file in task_files:
             status = read_task_status(task_file)
             title = _read_task_title(task_file)
 

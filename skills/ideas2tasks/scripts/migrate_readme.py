@@ -88,7 +88,16 @@ def get_task_meta(path):
         status = body_status
     title = fm_title or f"任務 {path.stem}"
     num = parse_task_num(path.name)
-    return {"num": num, "status": status, "title": title, "path": path}
+    # 讀取 assignee（從 frontmatter 或 body）
+    assignee = None
+    fm_match = re.search(r"^---\n(.*?)\n---", content, re.DOTALL)
+    if fm_match:
+        for line in fm_match.group(1).splitlines():
+            am = re.match(r"^\s*assignee\s*:\s*(.+)", line, re.I)
+            if am:
+                assignee = am.group(1).strip()
+                break
+    return {"num": num, "status": status, "title": title, "assignee": assignee, "path": path}
 
 def is_valid_task_col(col1):
     """排除中文標題、箭頭描述等非任務列"""
