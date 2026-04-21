@@ -4,6 +4,7 @@ status: pending
 assignee: {assignee}
 created: {created}
 updated: {updated}
+github: {github}
 ---
 
 # T{num} - {title}

@@ -1,10 +1,5 @@
 {
   "processed": {
-    "github-data-review.txt": {
-      "timestamp": "2026-04-20T17:59:16.976397",
-      "project": "github-data-review",
-      "task_count": 2
-    },
     "working-issue.txt": {
       "timestamp": "2026-04-14T13:18:38.059156",
       "project": "working-issue",
@@ -29,6 +24,11 @@
       "timestamp": "2026-04-20T17:59:16.976371",
       "project": "gold-monitor-issue",
       "task_count": 0
+    },
+    "github-data-review.txt": {
+      "timestamp": "2026-04-20T21:41:30.964072",
+      "project": "github-data-review",
+      "task_count": 2
     }
   }
 }

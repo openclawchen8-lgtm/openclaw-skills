@@ -36,6 +36,8 @@ def read_task_status(task_file: Path) -> str:
             m = re.match(r'^\-?\s*(\*+\s*)?Status(\s*\*+)?\s*:\s*(.+)', stripped, re.IGNORECASE)
             if m:
                 raw = re.sub(r'[\U00010000-\U0010ffff]', '', m.group(3).strip())
+                # 去除行內註解（# 之後的內容）
+                raw = raw.split('#')[0].strip()
                 raw_lower = raw.lower()
                 if raw_lower in ("done", "✅", "✅ done", "done ✅"):
                     return "done"
@@ -420,6 +422,106 @@ def normalize_all_task_statuses(project_name: str = None):
                 write_task_status(f, current)
                 fixed += 1
     return fixed
+
+
+# ===== 9. Tasks/ 目錄掃描（lifecycle.py 待處理追蹤用）=====
+
+def _read_task_title(task_file: Path) -> str:
+    """讀取 task 檔的標題。
+    支援兩種格式：
+    1. Markdown 標題行：# T001 - 標題
+    2. YAML frontmatter：title: 標題
+    """
+    try:
+        content = task_file.read_text(encoding="utf-8")
+        in_frontmatter = False
+        for line in content.splitlines():
+            stripped = line.strip()
+            # YAML frontmatter
+            if stripped == "---":
+                in_frontmatter = not in_frontmatter
+                continue
+            if in_frontmatter:
+                m = re.match(r'^title:\s*(.+)', stripped)
+                if m:
+                    return m.group(1).strip()
+            # Markdown 標題行（非 frontmatter 區）
+            if not in_frontmatter and stripped.startswith("# T"):
+                m = re.match(r'^#\s*T\d+\s*[-–—:]\s*(.+)', stripped)
+                if m:
+                    return m.group(1).strip()
+                return stripped.lstrip("# ").strip()
+    except Exception:
+        pass
+    return task_file.stem
+
+
+def scan_tasks_dir() -> list[dict]:
+    """
+    掃描 /Users/claw/Tasks/ 下所有專案，
+    找出有 pending 或 in-progress 任務的專案。
+    
+    這是「待處理」的唯一事實來源。
+    Idea 檔只負責初始建立，追蹤一律從 Tasks/。
+    
+    設計原則（2026-04-20 修正）：
+    - Ideas → 單向 → 建立 tasks/專案，之後 idea 檔完成使命
+    - 追蹤一律從 Tasks/ 目錄來，無需雙向同步
+    - lifecycle.py 的「待處理」報表應從此函數取值
+    """
+    results = []
+
+    if not TASKS_DIR.exists():
+        return results
+
+    for project_dir in sorted(TASKS_DIR.iterdir()):
+        if not project_dir.is_dir():
+            continue
+        if project_dir.name.startswith("_"):
+            continue
+
+        tasks_dir = project_dir / "tasks"
+        if not tasks_dir.exists():
+            continue
+
+        pending_tasks = []
+        in_progress_tasks = []
+        done_count = 0
+        skip_count = 0
+
+        for task_file in sorted(tasks_dir.glob("T*.md")):
+            status = read_task_status(task_file)
+            title = _read_task_title(task_file)
+
+            if status == "pending":
+                pending_tasks.append({
+                    "num": task_file.stem,
+                    "title": title,
+                    "file": str(task_file),
+                })
+            elif status == "in-progress":
+                in_progress_tasks.append({
+                    "num": task_file.stem,
+                    "title": title,
+                    "file": str(task_file),
+                })
+            elif status == "done":
+                done_count += 1
+            elif status == "skip":
+                skip_count += 1
+
+        if pending_tasks or in_progress_tasks:
+            results.append({
+                "project_name": project_dir.name,
+                "pending_count": len(pending_tasks),
+                "in_progress_count": len(in_progress_tasks),
+                "done_count": done_count,
+                "skip_count": skip_count,
+                "pending_tasks": pending_tasks,
+                "in_progress_tasks": in_progress_tasks,
+            })
+
+    return results
 
 
 # ===== CLI 入口 =====
