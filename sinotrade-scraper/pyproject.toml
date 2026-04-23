@@ -1,0 +1,16 @@
+[project]
+name = "sinotrade-scraper"
+version = "1.1.0"
+description = "永豐投顧台股報告自動抓取系統"
+requires-python = ">=3.10"
+dependencies = ["playwright>=1.40.0"]
+
+[project.scripts]
+sinotrade = "sinotrade_scraper.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sinotrade_scraper"]
