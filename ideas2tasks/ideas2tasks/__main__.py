@@ -7,6 +7,8 @@ ideas2tasks CLI 入口點
   python3 -m ideas2tasks executor [--no-spawn] [--sync-github]
   python3 -m ideas2tasks sync-status [--project xxx] [--dry-run]
   python3 -m ideas2tasks task-complete <task_file> [--status done]
+  python3 -m ideas2tasks task-audit [--project xxx]
+  python3 -m ideas2tasks read-status [task_file_or_project]
   python3 -m ideas2tasks --help
 """
 
@@ -28,6 +30,8 @@ def main():
         print("  sync               同步狀態（state_sync 模塊）")
         print("  sync-status        同步 Tasks/ ↔ Ideas/ 狀態")
         print("  task-complete      標記 task 完成（同步到 idea）")
+        print("  task-audit         稽核 T*.md 與 README.md 一致性")
+        print("  read-status        讀取 task 或專案狀態")
         print("  status <project>   查看專案 task 狀態")
         print()
         print("選項：")
@@ -74,6 +78,16 @@ def main():
         from ideas2tasks.task_completion_hook import main as task_complete_main
         sys.argv = ["task-complete"] + args
         task_complete_main()
+
+    elif command == "task-audit":
+        from ideas2tasks.task_audit import main as task_audit_main
+        sys.argv = ["task-audit"] + args
+        task_audit_main()
+
+    elif command == "read-status":
+        from ideas2tasks.read_task_status import main as read_status_main
+        sys.argv = ["read-status"] + args
+        read_status_main()
 
     elif command == "status":
         from ideas2tasks.state_sync import get_tasks_dir_status
