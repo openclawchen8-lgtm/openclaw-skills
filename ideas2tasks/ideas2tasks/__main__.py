@@ -5,6 +5,8 @@ ideas2tasks CLI 入口點
 用法：
   python3 -m ideas2tasks lifecycle [--dry-run] [--telegram]
   python3 -m ideas2tasks executor [--no-spawn] [--sync-github]
+  python3 -m ideas2tasks sync-status [--project xxx] [--dry-run]
+  python3 -m ideas2tasks task-complete <task_file> [--status done]
   python3 -m ideas2tasks --help
 """
 
@@ -21,26 +23,28 @@ def main():
         print("  python3 -m ideas2tasks <command> [options]")
         print()
         print("命令：")
-        print("  lifecycle       掃描 Ideas → 分類 → 彙整摘要")
-        print("  executor        讀取狀態 → 建立 tasks → spawn agents")
-        print("  sync <project>  同步狀態（Tasks/ ↔ Ideas/）")
-        print("  status <project> 查看專案 task 狀態")
+        print("  lifecycle          掃描 Ideas → 分類 → 彙整摘要")
+        print("  executor           讀取狀態 → 建立 tasks → spawn agents")
+        print("  sync               同步狀態（state_sync 模塊）")
+        print("  sync-status        同步 Tasks/ ↔ Ideas/ 狀態")
+        print("  task-complete      標記 task 完成（同步到 idea）")
+        print("  status <project>   查看專案 task 狀態")
         print()
         print("選項：")
-        print("  --dry-run         預覽模式（不執行實際操作）")
-        print("  --telegram        發送 Telegram 通知")
-        print("  --no-spawn        只建立 tasks，不 spawn agents")
-        print("  --sync-github     直接掃 T*.md 建立 GitHub Issue")
-        print("  --help, -h        顯示此幫助")
+        print("  --dry-run          預覽模式（不執行實際操作）")
+        print("  --telegram         發送 Telegram 通知")
+        print("  --no-spawn         只建立 tasks，不 spawn agents")
+        print("  --sync-github      直接掃 T*.md 建立 GitHub Issue")
+        print("  --fix-history      修復歷史不一致")
+        print("  --scan-done        掃描所有 done tasks 並同步")
+        print("  --help, -h         顯示此幫助")
         sys.exit(0)
 
     command = sys.argv[1]
     args = sys.argv[2:]
 
     if command == "lifecycle":
-        # 直接調用新模組
         from ideas2tasks.lifecycle import main as lifecycle_main
-        # 替換 sys.argv 以模擬直接執行
         sys.argv = ["lifecycle"] + args
         lifecycle_main()
 
@@ -60,6 +64,16 @@ def main():
         project_name = args[0]
         result = sync_idea_to_task_done(project_name)
         print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    elif command == "sync-status":
+        from ideas2tasks.sync_status import main as sync_status_main
+        sys.argv = ["sync-status"] + args
+        sync_status_main()
+
+    elif command == "task-complete":
+        from ideas2tasks.task_completion_hook import main as task_complete_main
+        sys.argv = ["task-complete"] + args
+        task_complete_main()
 
     elif command == "status":
         from ideas2tasks.state_sync import get_tasks_dir_status

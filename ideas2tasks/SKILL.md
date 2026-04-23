@@ -33,11 +33,16 @@ ideas2tasks/
 │   ├── scan.py
 │   ├── classify.py
 │   ├── state_sync.py
-│   ├── lifecycle.py       # ← 新增
-│   └── executor.py        # ← 新增
+│   ├── lifecycle.py       # ← T008-1
+│   ├── executor.py        # ← T008-1
+│   ├── task_status.py     # ← T008-2
+│   ├── sync_status.py     # ← T008-2
+│   └── task_completion_hook.py  # ← T008-2
 └── scripts/               # 舊腳本（向後兼容）
     ├── lifecycle_compat.py
-    └── executor_compat.py
+    ├── executor_compat.py
+    ├── sync_status_compat.py
+    └── task_completion_hook_compat.py
 ```
 
 **配置方式(優先順序):**
