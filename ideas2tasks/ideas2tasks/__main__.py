@@ -3,16 +3,14 @@
 ideas2tasks CLI 入口點
 
 用法：
-  python3 -m ideas2tasks lifecycle [--dry-run]
-  python3 -m ideas2tasks executor [--no-spawn]
+  python3 -m ideas2tasks lifecycle [--dry-run] [--telegram]
+  python3 -m ideas2tasks executor [--no-spawn] [--sync-github]
   python3 -m ideas2tasks --help
 """
 
 from __future__ import annotations
 
 import sys
-import subprocess
-from pathlib import Path
 
 
 def main():
@@ -23,42 +21,36 @@ def main():
         print("  python3 -m ideas2tasks <command> [options]")
         print()
         print("命令：")
-        print("  lifecycle   掃描 Ideas → 分類 → 彙整摘要")
-        print("  executor    讀取狀態 → 建立 tasks → spawn agents")
-        print("  sync        同步狀態（Tasks/ ↔ Ideas/）")
+        print("  lifecycle       掃描 Ideas → 分類 → 彙整摘要")
+        print("  executor        讀取狀態 → 建立 tasks → spawn agents")
+        print("  sync <project>  同步狀態（Tasks/ ↔ Ideas/）")
+        print("  status <project> 查看專案 task 狀態")
         print()
         print("選項：")
-        print("  --dry-run    預覽模式（不執行實際操作）")
-        print("  --no-spawn   只建立 tasks，不 spawn agents")
-        print("  --help, -h   顯示此幫助")
+        print("  --dry-run         預覽模式（不執行實際操作）")
+        print("  --telegram        發送 Telegram 通知")
+        print("  --no-spawn        只建立 tasks，不 spawn agents")
+        print("  --sync-github     直接掃 T*.md 建立 GitHub Issue")
+        print("  --help, -h        顯示此幫助")
         sys.exit(0)
 
     command = sys.argv[1]
     args = sys.argv[2:]
 
-    # 找到 scripts 目錄（舊版，向後兼容）
-    # 新版會直接 import 模組
-    this_dir = Path(__file__).parent
-
     if command == "lifecycle":
-        # 向後兼容：調用舊版 lifecycle.py
-        legacy_script = this_dir.parent / "scripts" / "lifecycle.py"
-        if legacy_script.exists():
-            subprocess.run([sys.executable, str(legacy_script)] + args)
-        else:
-            print("❌ lifecycle.py 不存在")
-            sys.exit(1)
+        # 直接調用新模組
+        from ideas2tasks.lifecycle import main as lifecycle_main
+        # 替換 sys.argv 以模擬直接執行
+        sys.argv = ["lifecycle"] + args
+        lifecycle_main()
 
     elif command == "executor":
-        legacy_script = this_dir.parent / "scripts" / "executor.py"
-        if legacy_script.exists():
-            subprocess.run([sys.executable, str(legacy_script)] + args)
-        else:
-            print("❌ executor.py 不存在")
-            sys.exit(1)
+        from ideas2tasks.executor import main as executor_main
+        sys.argv = ["executor"] + args
+        executor_main()
 
     elif command == "sync":
-        from ideas2tasks.state_sync import sync_idea_to_task_done, get_tasks_dir_status
+        from ideas2tasks.state_sync import sync_idea_to_task_done
         import json
 
         if len(args) < 1:
@@ -68,6 +60,18 @@ def main():
         project_name = args[0]
         result = sync_idea_to_task_done(project_name)
         print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    elif command == "status":
+        from ideas2tasks.state_sync import get_tasks_dir_status
+        import json
+
+        if len(args) < 1:
+            print("用法: python3 -m ideas2tasks status <project_name>")
+            sys.exit(1)
+
+        project_name = args[0]
+        status = get_tasks_dir_status(project_name)
+        print(json.dumps(status, ensure_ascii=False, indent=2))
 
     else:
         print(f"❌ 未知命令: {command}")
