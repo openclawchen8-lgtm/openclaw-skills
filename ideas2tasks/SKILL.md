@@ -23,7 +23,7 @@ metadata:
 - ✅ 向後兼容舊 scripts/ 入口點
 
 **新結構：**
-```
+```text
 ideas2tasks/
 ├── pyproject.toml
 ├── ideas2tasks/           # Python 包
@@ -262,7 +262,7 @@ python3 -m ideas2tasks sync <project-name>
 
 ```bash
 # 顯示幫助
-python3 -m ideas2tasks --help
+### python3 -m ideas2tasks --help
 
 # 執行 lifecycle(向後兼容舊腳本)
 python3 -m ideas2tasks lifecycle --dry-run
@@ -273,3 +273,4 @@ python3 -m ideas2tasks executor --no-spawn
 # 同步狀態
 python3 -m ideas2tasks sync gold-monitor
 ```
+### 
