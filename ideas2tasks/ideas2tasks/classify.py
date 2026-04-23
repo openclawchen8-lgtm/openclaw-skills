@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ideas2tasks classify.py
+ideas2tasks/classify.py
 根據 idea 內容分類、拆分 tasks、分配團隊成員。
 輸出可送入 task 模板的結構化資料。
 
@@ -10,6 +10,8 @@ ideas2tasks classify.py
   3. Task X.X: 格式（英文計畫書）
   4. - [ ] 待辦清單格式
 """
+
+from __future__ import annotations
 
 import json
 import re
@@ -468,6 +470,7 @@ def classify_idea(idea: dict) -> dict:
 
 
 def main():
+    """CLI 入口"""
     if len(sys.argv) > 1:
         with open(sys.argv[1], encoding="utf-8") as f:
             ideas = json.load(f).get("ideas", [])
