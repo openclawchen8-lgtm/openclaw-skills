@@ -25,29 +25,29 @@ metadata:
 **新結構：**
 ```
 ideas2tasks/
-├── pyproject.toml
-├── ideas2tasks/           # Python 包
-│   ├── __init__.py
-│   ├── __main__.py        # CLI 入口點
-│   ├── config.py          # 配置管理
-│   ├── scan.py
-│   ├── classify.py
-│   ├── state_sync.py
-│   ├── lifecycle.py       # ← T008-1
-│   ├── executor.py        # ← T008-1
-│   ├── task_status.py     # ← T008-2
-│   ├── sync_status.py     # ← T008-2
-│   ├── task_completion_hook.py  # ← T008-2
-│   ├── task_audit.py      # ← T008-3
-│   └── read_task_status.py # ← T008-3
-└── scripts/               # 舊腳本（向後兼容）
-    ├── lifecycle_compat.py
-    ├── executor_compat.py
-    ├── sync_status_compat.py
-    ├── task_completion_hook_compat.py
-    ├── task_audit_compat.py
-    ├── read_task_status_compat.py
-    └── migrate_readme.py  # ← 一次性工具，不遷移
+  ├── pyproject.toml
+  ├── ideas2tasks/           # Python 包
+  │   ├── __init__.py
+  │   ├── __main__.py        # CLI 入口點
+  │   ├── config.py          # 配置管理
+  │   ├── scan.py
+  │   ├── classify.py
+  │   ├── state_sync.py
+  │   ├── lifecycle.py       # T008-1
+  │   ├── executor.py        # T008-1
+  │   ├── task_status.py     # T008-2
+  │   ├── sync_status.py     # T008-2
+  │   ├── task_completion_hook.py  # T008-2
+  │   ├── task_audit.py      # T008-3
+  │   └── read_task_status.py # T008-3
+  └── scripts/               # 舊腳本（向後兼容）
+      ├── lifecycle_compat.py
+      ├── executor_compat.py
+      ├── sync_status_compat.py
+      ├── task_completion_hook_compat.py
+      ├── task_audit_compat.py
+      ├── read_task_status_compat.py
+      └── migrate_readme.py  # 一次性工具，不遷移
 ```
 
 **配置方式(優先順序):**
