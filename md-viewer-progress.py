@@ -17,7 +17,7 @@ def send_telegram(message):
         print("No telegram config found")
         return
     
-    token = config.get("telegram_token")
+    token = config.get("telegram_bot_token") or config.get("telegram_token")
     chat_id = config.get("telegram_chat_id")
     if not token or not chat_id:
         print("Missing telegram token/chat_id")
