@@ -1,0 +1,34 @@
+{
+  "processed": {
+    "working-issue.txt": {
+      "timestamp": "2026-04-14T13:18:38.059156",
+      "project": "working-issue",
+      "task_count": 0
+    },
+    "claw-sessions-issue.txt": {
+      "timestamp": "2026-04-14T13:18:38.059170",
+      "project": "claw-sessions-issue",
+      "task_count": 0
+    },
+    "openclaw.txt": {
+      "timestamp": "2026-04-14T13:18:38.059172",
+      "project": "openclaw",
+      "task_count": 0
+    },
+    "member-backup.txt": {
+      "timestamp": "2026-04-14T13:18:38.059177",
+      "project": "member-backup",
+      "task_count": 0
+    },
+    "gold-monitor-issue.txt": {
+      "timestamp": "2026-04-20T17:59:16.976371",
+      "project": "gold-monitor-issue",
+      "task_count": 0
+    },
+    "github-data-review.txt": {
+      "timestamp": "2026-04-20T21:41:30.964072",
+      "project": "github-data-review",
+      "task_count": 2
+    }
+  }
+}

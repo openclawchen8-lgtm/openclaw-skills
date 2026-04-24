@@ -1,0 +1,13 @@
+# 敏感配置
+.qclaw/
+.openclaw/
+
+# 環境變數
+.env
+.env.*
+
+# 暫存檔
+*.tmp
+*.log
+/tmp/
+*.swp
